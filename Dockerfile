@@ -9,7 +9,7 @@ RUN npm ci --ignore-scripts
 COPY frontend/ ./
 RUN npm run build
 
-FROM eclipse-temurin:21-jdk AS backend
+FROM eclipse-temurin:24-jdk AS backend
 WORKDIR /app/backend
 COPY backend/gradlew backend/settings.gradle.kts backend/build.gradle.kts backend/gradle.lockfile ./
 COPY backend/gradle ./gradle
@@ -19,7 +19,7 @@ COPY --from=frontend /app/frontend/dist ./src/main/resources/static
 # 테스트는 CI의 backend 잡에서 실행했으므로 이미지 빌드에서는 생략
 RUN ./gradlew --no-daemon bootJar -x test
 
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:24-jre AS runtime
 RUN groupadd --system app && useradd --system --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=backend /app/backend/build/libs/*.jar /app/app.jar
