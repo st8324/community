@@ -1,4 +1,5 @@
 # 게이트가 아니라 "업데이트 PR 생성기"다. 생성된 PR도 ci-passed를 통과해야 병합된다.
+# 메이저 버전 변경(기술 스택 결정에 해당)은 자동 제안하지 않는다 → 문서(02) 갱신 후 사람이 직접 올린다. (03 문서 HD-17)
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -14,9 +15,19 @@ updates:
         patterns: ['eslint*', '@eslint/*']
       test:
         patterns: ['vitest', '@testing-library/*', 'jsdom']
+    ignore:
+      # ESLint 10: eslint-plugin-react가 아직 지원하지 않음 (03 문서 HD-6, PR #3). 지원되면 이 두 항목을 지운다.
+      - dependency-name: 'eslint'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions # SHA로 고정한 액션의 갱신 PR
     directory: /
     schedule: { interval: weekly, day: monday, timezone: Asia/Seoul }
   - package-ecosystem: docker # Dockerfile 베이스 이미지
     directory: /
     schedule: { interval: weekly, day: monday, timezone: Asia/Seoul }
+    ignore:
+      # Java 21 LTS · Node 22 고정 (02 문서). 메이저(24-jre, 26 등)는 제안하지 않고 패치·태그 갱신만 받는다. (PR #1, #2)
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
