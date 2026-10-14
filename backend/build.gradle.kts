@@ -29,6 +29,12 @@ dependencyLocking {
     lockMode = LockMode.STRICT
 }
 
+// 보안 패치 (2026-10-14, Trivy fs 탐지): Spring Boot 4.1.1이 관리하는 버전에 취약점이 있어 수정 버전으로 올린다.
+// - Tomcat 11.0.24 → 11.0.25 : CVE-2026-65182, CVE-2026-65905, CVE-2026-68525 (CRITICAL)
+// - Jackson 3.1.5 → 3.1.7    : CVE-2026-89407, -89425, -68497, -91776, -91777 (HIGH)
+// Spring Boot를 이 버전 이상을 포함한 패치(4.1.2+)로 올리면 이 두 줄을 지운다. (03 문서 HD-15)
+extra["tomcat.version"] = "11.0.25"
+extra["jackson-bom.version"] = "3.1.7"
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-security")
