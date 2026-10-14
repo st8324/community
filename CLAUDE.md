@@ -27,6 +27,8 @@ AI(Claude 등)는 코드를 쓰기 전에 이 파일을 끝까지 읽고 따른�
 5. **시크릿**: 키·비밀번호·토큰을 코드·테스트·문서·커밋 메시지에 쓰지 않는다. 테스트용 JWT 키도 실행 시 무작위 생성한다. `.env`는 커밋하지 않는다.
 6. **의존성**: 새 라이브러리는 이유를 설명하고 사용자 동의를 받은 뒤 추가한다. 추가하면 잠금 파일(`backend/gradle.lockfile`, `frontend/package-lock.json`)을 같은 커밋에 갱신한다.
 7. **CI 보안**: `pull_request_target` 금지, 액션은 커밋 SHA 고정, 워크플로 기본 권한 읽기 전용.
+8. **트러블슈팅은 원인 확인 먼저**: 빌드·검사가 실패하면 추측으로 설정을 바꾸지 않는다. `--stacktrace`, `build/` 아래 상세 기록(예: `build/spotless-lints/`, `build/reports/`)에서 `Caused by`의 마지막 원인을 찾아 사용자에게 보여 준 뒤 고친다. 사용자 환경에서 실행하지 못한 것은 "검증 안 됨"이라고 명시한다.
+9. **도구 버전**: 플러그인이 관리하는 하위 도구의 버전(예: Spotless의 google-java-format)은 직접 고정하지 않는다 (궁합 문제, 03 문서 11.3절). Gradle 데몬 JVM은 `gradle-daemon-jvm.properties`로 21 고정을 유지한다.
 
 ## 3. 코드 작성 규칙 (보안 체크리스트)
 
@@ -72,7 +74,8 @@ npm run verify                      # lint + format:check + test + build
 npm run format                      # Prettier 자동 수정
 ```
 
-전제: Docker 실행 중, JDK 21, Node 22.
+전제: Docker 실행 중, JDK 21, Node 22. Gradle 설치는 필요 없다 (Wrapper 사용).
+Windows: Git Bash 권장. cmd에서는 `./gradlew` 대신 `gradlew`, PowerShell은 `.\gradlew`. `verify.sh`는 Git Bash에서만 실행된다.
 
 ## 6. 작업 순서 (기능 1개 기준)
 

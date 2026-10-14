@@ -163,12 +163,14 @@ jobs:
     steps:
       - name: All required jobs succeeded
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          echo "job results: $RESULTS"
-          for r in $RESULTS; do
-            if [ "$r" != "success" ]; then
-              echo "::error::필수 잡 중 성공하지 않은 잡이 있다 ($r)"
-              exit 1
-            fi
-          done
+          # 잡별 결과를 이름과 함께 출력하고, 성공하지 않은 잡이 있으면 이름을 찍고 실패한다.
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          failed=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success") | .key')
+          if [ -n "$failed" ]; then
+            for job in $failed; do
+              echo "::error title=필수 잡 실패::$job"
+            done
+            exit 1
+          fi
