@@ -1,0 +1,93 @@
+Initialized native services in: C:\Users\fastcampus\.gradle\native
+Initialized jansi services in: C:\Users\fastcampus\.gradle\native
+The client will now receive all logging from the daemon (pid: 14244). The daemon log file: C:\Users\fastcampus\.gradle\daemon\9.8.1\daemon-14244.out.log
+Starting 7th build in daemon [uptime: 24 mins 40.044 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 512 MiB, non-heap usage: 46% of 384 MiB]
+Using 8 worker leases.
+Operational build model parameters: {cachingModelBuilding=false, configurationCache=false, configurationCacheDisabledReason=null, configurationCacheParallelLoad=false, configurationCacheParallelStore=false, configureOnDemand=false, invalidateCoupledProjects=false, isolatedProjects=false, isolatedProjectsDiagnostics=false, isolatedProjectsDangerouslyIgnoreProblems=false, modelAsProjectDependency=false, modelBuilding=false, parallelModelBuilding=false, parallelProjectConfiguration=false, parallelProjectExecution=false, vintage=true}
+Now considering [C:\Users\fastcampus\Downloads\community-harness\community\backend] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\fastcampus\Downloads\community-harness\community\backend\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\fastcampus\Downloads\community-harness\community\backend\build.gradle.kts'.
+Included projects: [root project 'community-backend']
+
+> Configure project :
+Evaluating root project 'community-backend' using build file 'C:\Users\fastcampus\Downloads\community-harness\community\backend\build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java']
+Resolved plugin [id: 'org.gradle.jacoco']
+Resolved plugin [id: 'org.springframework.boot', version: '4.1.1']
+Resolved plugin [id: 'io.spring.dependency-management', version: '1.1.7']
+Resolved plugin [id: 'com.diffplug.spotless', version: '8.10.4']
+Applying dependency management to configuration 'annotationProcessor' in project 'community-backend'
+Applying dependency management to configuration 'apiElements' in project 'community-backend'
+Applying dependency management to configuration 'archives' in project 'community-backend'
+Applying dependency management to configuration 'bootArchives' in project 'community-backend'
+Applying dependency management to configuration 'compileClasspath' in project 'community-backend'
+Applying dependency management to configuration 'compileOnly' in project 'community-backend'
+Applying dependency management to configuration 'coverageDataElementsForTest' in project 'community-backend'
+Applying dependency management to configuration 'default' in project 'community-backend'
+Applying dependency management to configuration 'developmentOnly' in project 'community-backend'
+Applying dependency management to configuration 'implementation' in project 'community-backend'
+Applying dependency management to configuration 'jacocoAgent' in project 'community-backend'
+Applying dependency management to configuration 'jacocoAnt' in project 'community-backend'
+Applying dependency management to configuration 'mainSourceElements' in project 'community-backend'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'community-backend'
+Applying dependency management to configuration 'runtimeClasspath' in project 'community-backend'
+Applying dependency management to configuration 'runtimeElements' in project 'community-backend'
+Applying dependency management to configuration 'runtimeOnly' in project 'community-backend'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'community-backend'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'community-backend'
+Applying dependency management to configuration 'testCompileClasspath' in project 'community-backend'
+Applying dependency management to configuration 'testCompileOnly' in project 'community-backend'
+Applying dependency management to configuration 'testImplementation' in project 'community-backend'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'community-backend'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'community-backend'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'community-backend'
+All projects evaluated.
+Task name matched 'spotlessCheck'
+Selected primary task 'spotlessCheck' from project :
+Tasks to be executed: [task ':spotlessJava', task ':spotlessJavaCheck', task ':spotlessCheck']
+Tasks that were excluded: []
+Resolve mutations for :spotlessJava (Thread[#338,Execution worker,5,main]) started.
+:spotlessJava (Thread[#338,Execution worker,5,main]) started.
+
+> Task :spotlessJava
+Caching disabled for task ':spotlessJava' because:
+  Build cache is disabled
+Task ':spotlessJava' is not up-to-date because:
+  Executed with '--rerun-tasks'.
+The input changes require a full rebuild for incremental task ':spotlessJava'.
+Not incremental: removing prior outputs
+Resolve mutations for :spotlessJavaCheck (Thread[#338,Execution worker,5,main]) started.
+:spotlessJavaCheck (Thread[#338,Execution worker,5,main]) started.
+
+> Task :spotlessJavaCheck FAILED
+Caching disabled for task ':spotlessJavaCheck' because:
+  Build cache is disabled
+Task ':spotlessJavaCheck' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':spotlessJavaCheck' (registered in build file 'build.gradle.kts').
+> There were 7 lint error(s), they must be fixed or suppressed.
+  src/main/java/com/example/community/CommunityApplication.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  src/test/java/com/example/community/authz/PermissionMatrixSpecTest.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  src/test/java/com/example/community/harness/HarnessSmokeTest.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  src/test/java/com/example/community/security/SecurityRegressionSpecTest.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  src/test/java/com/example/community/support/IntegrationTest.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  src/test/java/com/example/community/support/SpecCsv.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  src/test/java/com/example/community/support/TestcontainersConfig.java:LINE_UNDEFINED google-java-format(java.lang.reflect.InvocationTargetException) java.lang.reflect.InvocationTargetException (...)
+  Resolve these lints or suppress with `suppressLintsFor`
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
+2 actionable tasks: 2 executed
+Watched directory hierarchies: [C:\Users\fastcampus\Downloads\community-harness\community\backend]

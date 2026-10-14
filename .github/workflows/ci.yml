@@ -1,0 +1,174 @@
+# CI 하네스 — 03 문서 7장
+# - PR마다 모든 검사를 실행하고, 결과를 집계 잡 `ci-passed` 하나로 모은다.
+# - 브랜치 보호는 `ci-passed`만 필수 체크로 지정한다 → 잡을 추가해도 보호 규칙을 고칠 필요가 없다.
+# - deploy.yml이 workflow_call로 이 워크플로를 먼저 실행한다 (테스트한 커밋 = 배포한 커밋).
+#
+# 보안 규칙 (02 문서 7장)
+# - pull_request_target 금지. 포크 PR에는 시크릿이 전달되지 않는 pull_request만 사용.
+# - 기본 권한 읽기 전용. 이 워크플로는 시크릿을 하나도 쓰지 않는다.
+# - 서드파티 액션은 커밋 SHA로 고정 (주석의 버전은 사람이 읽기 위한 것). Dependabot이 갱신 PR을 만든다.
+name: ci
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  # 운영·로컬·테스트와 같은 MySQL 태그를 미리 받아 둔다 (Testcontainers가 사용)
+  MYSQL_IMAGE: mysql:8.4
+  TRIVY_VERSION: v0.75.0
+
+jobs:
+  backend:
+    name: backend (Spotless · JUnit · Testcontainers)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      # wrapper jar 무결성 검증 포함 (변조된 gradle-wrapper.jar 차단)
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Pull MySQL image
+        run: docker pull "$MYSQL_IMAGE"
+      - name: ./gradlew check
+        run: ./gradlew check --no-daemon
+      - name: Harness summary
+        if: always()
+        run: |
+          if ls build/harness/*.md >/dev/null 2>&1; then
+            cat build/harness/*.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-test-reports
+          path: |
+            backend/build/reports/tests/
+            backend/build/test-results/
+          retention-days: 7
+
+  frontend:
+    name: frontend (ESLint · Prettier · Vitest · vite build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # --ignore-scripts: 의존성 패키지의 설치 스크립트 실행 차단 (공급망 공격 완화)
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+  secret-scan:
+    name: secret scan (Gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # 전체 이력 검사: 지운 시크릿도 이력에는 남아 있다
+          persist-credentials: false
+      # gitleaks-action 대신 공식 이미지를 직접 실행 (라이선스 키 불필요, 동작이 눈에 보임)
+      - name: gitleaks git
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git /repo --config /repo/.gitleaks.toml --redact --verbose --exit-code 1
+
+  dependency-scan:
+    name: dependency scan (Trivy fs)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lockfiles must exist
+        run: |
+          test -f backend/gradle.lockfile || { echo "backend/gradle.lockfile 없음 → ./gradlew resolveAndLockAll --write-locks"; exit 1; }
+          test -f frontend/package-lock.json || { echo "frontend/package-lock.json 없음"; exit 1; }
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          trivyignores: .trivyignore.yaml
+          exit-code: '1'
+          format: table
+
+  image-scan:
+    name: image build + scan (Trivy image)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # PR에서는 푸시하지 않는다. 로컬(러너)에만 적재해 스캔한다.
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: community-app:ci-${{ github.sha }}
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: image
+          image-ref: community-app:ci-${{ github.sha }}
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          trivyignores: .trivyignore.yaml
+          exit-code: '1'
+          format: table
+
+  # 브랜치 보호의 유일한 필수 체크. 하나라도 실패·취소·건너뜀이면 실패한다.
+  ci-passed:
+    name: ci-passed
+    if: always()
+    needs: [backend, frontend, secret-scan, dependency-scan, image-scan]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: All required jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::필수 잡 중 성공하지 않은 잡이 있다 ($r)"
+              exit 1
+            fi
+          done

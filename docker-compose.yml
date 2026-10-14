@@ -1,0 +1,15 @@
+# 로컬 개발용 MySQL. 테스트는 이 파일을 쓰지 않는다 (Testcontainers가 따로 띄움).
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: community
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?.env에 MYSQL_ROOT_PASSWORD를 설정하세요}
+      MYSQL_USER: ${LOCAL_DB_USERNAME:?.env에 LOCAL_DB_USERNAME을 설정하세요}
+      MYSQL_PASSWORD: ${LOCAL_DB_PASSWORD:?.env에 LOCAL_DB_PASSWORD를 설정하세요}
+    ports:
+      - '127.0.0.1:3306:3306' # 내 PC에서만 접근 (0.0.0.0 바인딩 금지)
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  mysql-data:

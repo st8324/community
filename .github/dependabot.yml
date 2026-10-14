@@ -1,0 +1,22 @@
+# 게이트가 아니라 "업데이트 PR 생성기"다. 생성된 PR도 ci-passed를 통과해야 병합된다.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule: { interval: weekly, day: monday, timezone: Asia/Seoul }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday, timezone: Asia/Seoul }
+    open-pull-requests-limit: 5
+    groups:
+      eslint:
+        patterns: ['eslint*', '@eslint/*']
+      test:
+        patterns: ['vitest', '@testing-library/*', 'jsdom']
+  - package-ecosystem: github-actions # SHA로 고정한 액션의 갱신 PR
+    directory: /
+    schedule: { interval: weekly, day: monday, timezone: Asia/Seoul }
+  - package-ecosystem: docker # Dockerfile 베이스 이미지
+    directory: /
+    schedule: { interval: weekly, day: monday, timezone: Asia/Seoul }

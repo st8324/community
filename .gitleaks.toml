@@ -1,0 +1,6 @@
+# Gitleaks 설정 — 기본 규칙을 그대로 쓴다.
+# 예외(allowlist)를 추가할 때는 PR에 이유를 적는다. "테스트용 키"도 예외로 두지 말고 테스트 실행 시 생성한다.
+title = "community gitleaks config"
+
+[extend]
+useDefault = true

@@ -1,0 +1,9 @@
+# Trivy 예외 목록. 비어 있는 것이 정상이다.
+# 예외가 필요하면 반드시 id·사유(statement)·만료일(expired_at)을 적는다. 만료일이 지나면 예외가 자동으로 풀린다.
+# 예시:
+# vulnerabilities:
+#   - id: CVE-0000-00000
+#     paths: ["backend/gradle.lockfile"]
+#     statement: "취약 함수 미사용. 상위 버전 출시 대기 (이슈 #12)"
+#     expired_at: 2026-12-31
+vulnerabilities: []

@@ -1,0 +1,56 @@
+# 권한 매트릭스 명세 — 01 요구사항 3.1절 + 02 문서 5.3절의 "단일 기준".
+# 열 설명
+#   actor          GUEST(비로그인) / USER / ADMIN
+#   target         NONE(대상 리소스 없음) / OWN(요청자 소유) / OTHER(타인 소유)
+#   expected       기대 HTTP 상태. N/A = 요구사항상 해당 없음(테스트하지 않음, 의도적 결정)
+#   can_edit/can_delete  응답의 불리언 기대값. '-' = 해당 응답에 없음
+#   state          PENDING(기능 미구현) → ACTIVE(PermissionMatrixTest가 실제로 검증) / N/A
+# 규칙: 모든 요청은 유효한 CSRF 토큰을 포함한다고 가정한다. CSRF 누락은 보안 회귀 목록(S-06)에서 따로 검증한다.
+# 규칙: 기능 PR은 해당 행을 ACTIVE로 바꾸고 PermissionMatrixTest가 그 행을 통과해야 병합할 수 있다.
+case_id,req_id,method,path,actor,target,expected,can_edit,can_delete,state
+M-01,AUTH-01,POST,/api/auth/signup,GUEST,NONE,201,-,-,PENDING
+M-02,AUTH-01,POST,/api/auth/signup,USER,NONE,N/A,-,-,N/A
+M-03,AUTH-01,POST,/api/auth/signup,ADMIN,NONE,N/A,-,-,N/A
+M-04,AUTH-02,POST,/api/auth/login,GUEST,NONE,200,-,-,PENDING
+M-05,AUTH-02,POST,/api/auth/login,USER,NONE,N/A,-,-,N/A
+M-06,AUTH-02,POST,/api/auth/login,ADMIN,NONE,N/A,-,-,N/A
+M-07,AUTH-03,POST,/api/auth/logout,GUEST,NONE,401,-,-,PENDING
+M-08,AUTH-03,POST,/api/auth/logout,USER,NONE,204,-,-,PENDING
+M-09,AUTH-03,POST,/api/auth/logout,ADMIN,NONE,204,-,-,PENDING
+M-10,AUTH-05,GET,/api/auth/me,GUEST,NONE,401,-,-,PENDING
+M-11,AUTH-05,GET,/api/auth/me,USER,NONE,200,-,-,PENDING
+M-12,AUTH-05,GET,/api/auth/me,ADMIN,NONE,200,-,-,PENDING
+M-13,POST-02,GET,/api/posts,GUEST,NONE,200,-,-,PENDING
+M-14,POST-02,GET,/api/posts,USER,NONE,200,-,-,PENDING
+M-15,POST-02,GET,/api/posts,ADMIN,NONE,200,-,-,PENDING
+M-16,POST-03,GET,/api/posts/{id},GUEST,OTHER,200,false,false,PENDING
+M-17,POST-03,GET,/api/posts/{id},USER,OWN,200,true,true,PENDING
+M-18,POST-03,GET,/api/posts/{id},USER,OTHER,200,false,false,PENDING
+M-19,POST-03,GET,/api/posts/{id},ADMIN,OWN,200,true,true,PENDING
+M-20,POST-03,GET,/api/posts/{id},ADMIN,OTHER,200,false,true,PENDING
+M-21,POST-01,POST,/api/posts,GUEST,NONE,401,-,-,PENDING
+M-22,POST-01,POST,/api/posts,USER,NONE,201,-,-,PENDING
+M-23,POST-01,POST,/api/posts,ADMIN,NONE,201,-,-,PENDING
+M-24,POST-04,PUT,/api/posts/{id},GUEST,OTHER,401,-,-,PENDING
+M-25,POST-04,PUT,/api/posts/{id},USER,OWN,200,-,-,PENDING
+M-26,POST-04,PUT,/api/posts/{id},USER,OTHER,403,-,-,PENDING
+M-27,POST-04,PUT,/api/posts/{id},ADMIN,OWN,200,-,-,PENDING
+M-28,POST-04,PUT,/api/posts/{id},ADMIN,OTHER,403,-,-,PENDING
+M-29,POST-05,DELETE,/api/posts/{id},GUEST,OTHER,401,-,-,PENDING
+M-30,POST-05,DELETE,/api/posts/{id},USER,OWN,204,-,-,PENDING
+M-31,POST-05,DELETE,/api/posts/{id},USER,OTHER,403,-,-,PENDING
+M-32,POST-05,DELETE,/api/posts/{id},ADMIN,OWN,204,-,-,PENDING
+M-33,POST-05,DELETE,/api/posts/{id},ADMIN,OTHER,204,-,-,PENDING
+M-34,CMT-02,GET,/api/posts/{id}/comments,GUEST,OTHER,200,-,false,PENDING
+M-35,CMT-02,GET,/api/posts/{id}/comments,USER,OWN,200,-,true,PENDING
+M-36,CMT-02,GET,/api/posts/{id}/comments,USER,OTHER,200,-,false,PENDING
+M-37,CMT-02,GET,/api/posts/{id}/comments,ADMIN,OWN,200,-,true,PENDING
+M-38,CMT-02,GET,/api/posts/{id}/comments,ADMIN,OTHER,200,-,true,PENDING
+M-39,CMT-01,POST,/api/posts/{id}/comments,GUEST,NONE,401,-,-,PENDING
+M-40,CMT-01,POST,/api/posts/{id}/comments,USER,NONE,201,-,-,PENDING
+M-41,CMT-01,POST,/api/posts/{id}/comments,ADMIN,NONE,201,-,-,PENDING
+M-42,CMT-03,DELETE,/api/comments/{id},GUEST,OTHER,401,-,-,PENDING
+M-43,CMT-03,DELETE,/api/comments/{id},USER,OWN,204,-,-,PENDING
+M-44,CMT-03,DELETE,/api/comments/{id},USER,OTHER,403,-,-,PENDING
+M-45,CMT-03,DELETE,/api/comments/{id},ADMIN,OWN,204,-,-,PENDING
+M-46,CMT-03,DELETE,/api/comments/{id},ADMIN,OTHER,204,-,-,PENDING
