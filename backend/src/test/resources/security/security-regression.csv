@@ -3,13 +3,13 @@
 # state: PENDING(기능 미구현, 계획된 이름만 있음) → ACTIVE(해당 메서드가 실제로 존재해야 함).
 # 규칙: 값에 쉼표를 쓰지 않는다.
 case_id,req_id,description,test_ref,state
-S-01,SEC-04,alg=none 토큰은 401,JwtTokenSecurityTest#algNoneTokenIsRejected,PENDING
-S-02,SEC-04,서명을 변조한 토큰은 401,JwtTokenSecurityTest#tamperedSignatureIsRejected,PENDING
-S-03,SEC-04,HS256이 아닌 알고리즘 헤더의 토큰은 401,JwtTokenSecurityTest#otherAlgorithmIsRejected,PENDING
-S-04,SEC-06,만료된 토큰은 401 (시계 주입),JwtTokenSecurityTest#expiredTokenIsRejected,PENDING
-S-05,SEC-05,로그인 응답 쿠키는 HttpOnly·Secure·SameSite=Strict·Path=/·Max-Age=3600,CookieSecurityTest#loginCookieAttributes,PENDING
-S-06,SEC-05,상태 변경 요청(로그인 포함)에 CSRF 토큰이 없으면 403,CsrfSecurityTest#stateChangingRequestWithoutCsrfIsForbidden,PENDING
-S-07,AUTH-03,로그아웃 응답은 access_token 쿠키를 Max-Age=0으로 지운다,CookieSecurityTest#logoutClearsCookie,PENDING
+S-01,SEC-04,alg=none 토큰은 401,JwtTokenSecurityTest#algNoneTokenIsRejected,ACTIVE
+S-02,SEC-04,서명을 변조한 토큰은 401,JwtTokenSecurityTest#tamperedSignatureIsRejected,ACTIVE
+S-03,SEC-04,HS256이 아닌 알고리즘 헤더의 토큰은 401,JwtTokenSecurityTest#otherAlgorithmIsRejected,ACTIVE
+S-04,SEC-06,만료된 토큰은 401 (시계 주입),JwtTokenSecurityTest#expiredTokenIsRejected,ACTIVE
+S-05,SEC-05,로그인 응답 쿠키는 HttpOnly·Secure·SameSite=Strict·Path=/·Max-Age=3600,CookieSecurityTest#loginCookieAttributes,ACTIVE
+S-06,SEC-05,상태 변경 요청(로그인 포함)에 CSRF 토큰이 없으면 403,CsrfSecurityTest#stateChangingRequestWithoutCsrfIsForbidden,ACTIVE
+S-07,AUTH-03,로그아웃 응답은 access_token 쿠키를 Max-Age=0으로 지운다,CookieSecurityTest#logoutClearsCookie,ACTIVE
 S-08,SEC-02,DB에 저장된 비밀번호는 평문이 아니고 BCrypt 형식이다,PasswordStorageSecurityTest#passwordIsStoredAsBcrypt,ACTIVE
 S-09,SEC-03,UTF-8 72바이트를 넘는 비밀번호(멀티바이트 포함)는 400,PasswordStorageSecurityTest#passwordOver72BytesIsRejected,ACTIVE
 S-10,DATA-05,모든 응답 본문에 password_hash·role·이메일 원문·deleted_at·deleted_by가 없다,ResponseExposureSecurityTest#responsesDoNotLeakSensitiveFields,PENDING
@@ -18,4 +18,4 @@ S-12,SEC-10,오류 응답에 스택트레이스·예외 클래스명·SQL이 없
 S-13,SEC-10,/actuator/health는 상세를 숨기고 다른 actuator 경로는 노출하지 않는다,ErrorResponseSecurityTest#actuatorExposesHealthOnly,PENDING
 S-14,SEC-13,다른 Origin 요청에 CORS 허용 헤더가 붙지 않는다,HeaderSecurityTest#noCorsHeadersForForeignOrigin,PENDING
 S-15,SEC-14,보안 헤더(CSP·X-Content-Type-Options·frame-ancestors)가 있다,HeaderSecurityTest#securityHeadersArePresent,PENDING
-S-16,AUTH-02,없는 이메일과 틀린 비밀번호의 오류 응답이 같다,LoginEnumerationSecurityTest#unknownEmailAndWrongPasswordLookTheSame,PENDING
+S-16,AUTH-02,없는 이메일과 틀린 비밀번호의 오류 응답이 같다,LoginEnumerationSecurityTest#unknownEmailAndWrongPasswordLookTheSame,ACTIVE
