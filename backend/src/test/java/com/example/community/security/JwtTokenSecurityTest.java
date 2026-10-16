@@ -134,7 +134,7 @@ class JwtTokenSecurityTest {
 
   @Test
   void 서명은_맞지만_존재하지_않는_사용자의_토큰은_401이다() throws Exception {
-    callMe(sign(JWSAlgorithm.HS256, validClaims(Long.MAX_VALUE - 1)))
+    callMe(sign(JWSAlgorithm.HS256, validClaims(999_999_999_999L)))
         .andExpect(status().isUnauthorized());
   }
 }

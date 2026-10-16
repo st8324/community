@@ -3,6 +3,7 @@ package com.example.community.common.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -36,7 +37,7 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.GET, "/api/csrf")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/auth/signup")
+                    .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login")
                     .permitAll()
                     // 나머지 /api/**는 로그인 필요. 공개 조회 API는 해당 기능 PR에서 여기 명시적으로 연다.
                     .requestMatchers("/api/**")
@@ -44,6 +45,13 @@ public class SecurityConfig {
                     // 정적 파일(SPA), /actuator/health(노출 범위는 application.yml에서 health만)
                     .anyRequest()
                     .permitAll())
+        // JWT 검증은 Resource Server에 맡긴다 (서명·만료·알고리즘은 JwtConfig의 디코더 설정). 토큰은 쿠키에서만 읽는다.
+        .oauth2ResourceServer(
+            rs ->
+                rs.bearerTokenResolver(new CookieBearerTokenResolver())
+                    .authenticationEntryPoint(errors)
+                    .accessDeniedHandler(errors)
+                    .jwt(Customizer.withDefaults()))
         .exceptionHandling(e -> e.authenticationEntryPoint(errors).accessDeniedHandler(errors));
     return http.build();
   }
