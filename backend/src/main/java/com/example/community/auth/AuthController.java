@@ -26,19 +26,24 @@ public class AuthController {
     this.accessTokens = accessTokens;
   }
 
-  /** AUTH-01: 201, 본문 없음, 토큰 발급 없음 (D-10). */
+  /** AUTH-01: 201 + 가입 직후 자동 로그인 (01 v0.4 D-15) — 로그인과 같은 쿠키·본문. */
   @PostMapping("/signup")
-  public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest request) {
-    authService.signup(request);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+  public ResponseEntity<MeResponse> signup(@Valid @RequestBody SignupRequest request) {
+    User user = authService.signup(request);
+    return loggedIn(ResponseEntity.status(HttpStatus.CREATED), user);
   }
 
   /** AUTH-02: 200 + 토큰 쿠키 + {id, displayName}. 토큰은 본문에 넣지 않는다 (SEC-05: JS가 토큰을 만지지 않게). */
   @PostMapping("/login")
   public ResponseEntity<MeResponse> login(@Valid @RequestBody LoginRequest request) {
     User user = authService.login(request);
+    return loggedIn(ResponseEntity.ok(), user);
+  }
+
+  /** 로그인 상태로 만드는 응답 (가입·로그인 공통). */
+  private ResponseEntity<MeResponse> loggedIn(ResponseEntity.BodyBuilder response, User user) {
     String token = accessTokens.issue(user.getId());
-    return ResponseEntity.ok()
+    return response
         .header(HttpHeaders.SET_COOKIE, accessTokens.cookieFor(token).toString())
         .body(MeResponse.from(user));
   }
