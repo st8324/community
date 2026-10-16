@@ -27,6 +27,8 @@ community:
     # 비어 있으면 앱이 기동하지 않는다. 테스트는 RandomJwtSecretInitializer가 무작위로 채운다.
     secret: ${JWT_SECRET:}
     ttl: 1h # A-5. 토큰 exp와 쿠키 Max-Age에 같이 쓴다
+  refresh:
+    ttl: 14d # A-7. 로그인 상태 유지 기간 (최초 로그인 기준 절대 만료)
 
 management:
   endpoints:
