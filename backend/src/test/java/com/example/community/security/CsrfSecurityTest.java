@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.community.auth.Role;
 import com.example.community.support.AuthFixtures;
 import com.example.community.support.AuthFixtures.Account;
+import com.example.community.support.AuthFixtures.Session;
 import com.example.community.support.IntegrationTest;
 import com.example.community.support.JsonBodies;
 import com.example.community.support.TestData;
@@ -39,6 +40,7 @@ class CsrfSecurityTest {
   void stateChangingRequestWithoutCsrfIsForbidden() throws Exception {
     Account account = fixtures.createUser(Role.USER);
     Cookie token = fixtures.login(account);
+    Session remembered = fixtures.loginRememberedAsNew(Role.USER);
 
     List<MockHttpServletRequestBuilder> requests =
         List.of(
@@ -50,7 +52,9 @@ class CsrfSecurityTest {
             post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(JsonBodies.of("email", account.email(), "password", account.password())),
-            post("/api/auth/logout").cookie(token));
+            post("/api/auth/logout").cookie(token),
+            // 01 v0.4: 로그인 연장도 상태 변경 요청 (리프레시 토큰을 소모·교체한다)
+            post("/api/auth/refresh").cookie(remembered.refreshToken()));
 
     for (MockHttpServletRequestBuilder request : requests) {
       mvc.perform(request)

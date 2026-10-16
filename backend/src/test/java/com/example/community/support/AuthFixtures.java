@@ -24,9 +24,17 @@ import org.springframework.test.web.servlet.MvcResult;
 public class AuthFixtures {
 
   public static final String ACCESS_TOKEN = "access_token";
+  public static final String REFRESH_TOKEN = "refresh_token";
 
   /** 테스트가 쓰는 계정. password는 평문 — 테스트 안에서만 존재한다. */
   public record Account(long id, String email, String password, Role role) {}
+
+  /** 로그인 상태 유지(rememberMe=true)로 로그인한 세션: 액세스·리프레시 토큰 쿠키. */
+  public record Session(Cookie accessToken, Cookie refreshToken) {
+    public Cookie[] cookies() {
+      return new Cookie[] {accessToken, refreshToken};
+    }
+  }
 
   private final MockMvc mvc;
   private final UserRepository users;
@@ -57,6 +65,37 @@ public class AuthFixtures {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(JsonBodies.of("email", email, "password", password)))
         .andReturn();
+  }
+
+  public MvcResult loginResult(String email, String password, boolean rememberMe) throws Exception {
+    return mvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    JsonBodies.of("email", email, "password", password, "rememberMe", rememberMe)))
+        .andReturn();
+  }
+
+  /** rememberMe=true 로그인 → 액세스·리프레시 쿠키. 둘 중 하나라도 없으면 테스트를 실패시킨다. */
+  public Session loginRemembered(Account account) throws Exception {
+    MvcResult result = loginResult(account.email(), account.password(), true);
+    String access = accessTokenSetCookie(result).orElseThrow(() -> new AssertionError("액세스 쿠키 없음"));
+    String refresh = refreshSetCookie(result).orElseThrow(() -> new AssertionError("리프레시 쿠키 없음"));
+    return new Session(
+        new Cookie(ACCESS_TOKEN, cookieValue(access)),
+        new Cookie(REFRESH_TOKEN, cookieValue(refresh)));
+  }
+
+  public Session loginRememberedAsNew(Role role) throws Exception {
+    return loginRemembered(createUser(role));
+  }
+
+  /** 응답의 Set-Cookie 중 refresh_token 줄. */
+  public static Optional<String> refreshSetCookie(MvcResult result) {
+    return result.getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
+        .filter(line -> line.startsWith(REFRESH_TOKEN + "="))
+        .findFirst();
   }
 
   /** 로그인해서 받은 토큰 쿠키. 로그인에 실패하면 테스트를 실패시킨다. */

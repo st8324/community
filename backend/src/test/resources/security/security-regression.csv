@@ -19,3 +19,8 @@ S-13,SEC-10,/actuator/health는 상세를 숨기고 다른 actuator 경로는 �
 S-14,SEC-13,다른 Origin 요청에 CORS 허용 헤더가 붙지 않는다,HeaderSecurityTest#noCorsHeadersForForeignOrigin,PENDING
 S-15,SEC-14,보안 헤더(CSP·X-Content-Type-Options·frame-ancestors)가 있다,HeaderSecurityTest#securityHeadersArePresent,PENDING
 S-16,AUTH-02,없는 이메일과 틀린 비밀번호의 오류 응답이 같다,LoginEnumerationSecurityTest#unknownEmailAndWrongPasswordLookTheSame,ACTIVE
+S-17,SEC-16,이미 쓴 리프레시 토큰을 다시 쓰면 401이고 같은 묶음의 토큰이 모두 폐기된다,RefreshTokenSecurityTest#reusedRefreshTokenRevokesWholeFamily,ACTIVE
+S-18,SEC-16,리프레시 쿠키는 HttpOnly·Secure·SameSite=Strict·Path=/api/auth·Max-Age=1209600,RefreshTokenSecurityTest#refreshCookieAttributes,ACTIVE
+S-19,SEC-16,DB에는 리프레시 토큰 원문이 아니라 SHA-256 해시만 저장된다,RefreshTokenSecurityTest#refreshTokenIsStoredAsHashOnly,ACTIVE
+S-20,AUTH-03,로그아웃하면 서버에서 리프레시 토큰이 폐기되어 복사해 둔 토큰으로도 연장할 수 없다,RefreshTokenSecurityTest#logoutRevokesRefreshToken,ACTIVE
+S-21,AUTH-06,만료 시각이 지난 리프레시 토큰은 401이고 교체해도 만료 시각이 늘지 않는다,RefreshTokenSecurityTest#refreshTokenHasAbsoluteExpiry,ACTIVE

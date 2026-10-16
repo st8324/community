@@ -1,15 +1,15 @@
 package com.example.community.support;
 
 /**
- * 요청 본문용 아주 작은 JSON 객체 생성기 (문자열 값만, 키·값 쌍 순서대로).
+ * 요청 본문용 아주 작은 JSON 객체 생성기 (키·값 쌍 순서대로).
  *
- * <p>테스트가 JSON 라이브러리 버전(Jackson 2/3)에 묶이지 않게 직접 만든다. 값이 {@code null}이면 JSON null로 쓴다.
+ * <p>테스트가 JSON 라이브러리 버전(Jackson 2/3)에 묶이지 않게 직접 만든다. 값은 문자열·불리언·숫자·null만 지원한다.
  */
 public final class JsonBodies {
 
   private JsonBodies() {}
 
-  public static String of(String... keyValues) {
+  public static String of(Object... keyValues) {
     if (keyValues.length % 2 != 0) {
       throw new IllegalArgumentException("키·값 쌍이 맞지 않는다");
     }
@@ -18,8 +18,17 @@ public final class JsonBodies {
       if (i > 0) {
         sb.append(',');
       }
-      sb.append(quote(keyValues[i])).append(':');
-      sb.append(keyValues[i + 1] == null ? "null" : quote(keyValues[i + 1]));
+      sb.append(quote((String) keyValues[i])).append(':');
+      Object value = keyValues[i + 1];
+      if (value == null) {
+        sb.append("null");
+      } else if (value instanceof Boolean || value instanceof Number) {
+        sb.append(value);
+      } else if (value instanceof String s) {
+        sb.append(quote(s));
+      } else {
+        throw new IllegalArgumentException("지원하지 않는 값 타입: " + value.getClass());
+      }
     }
     return sb.append('}').toString();
   }
