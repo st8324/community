@@ -78,6 +78,38 @@ public class PostService {
     return PostListResponse.of(posts.findByDeletedAtIsNull(request));
   }
 
+  /**
+   * POST-04. 검사 순서: (401·400은 앞 단계) → 404 없음·삭제됨 → 403 작성자 아님 (01 D-24). 관리자도 타인 글은 수정할 수 없다.
+   *
+   * @throws ApiException {@code NOT_FOUND}, {@code FORBIDDEN}
+   */
+  @Transactional
+  public PostResponse update(long postId, long userId, PostRequest request) {
+    Post post = requirePost(postId);
+    User user = requireUser(userId);
+    PostPermissions permissions = PostPermissions.of(post, user);
+    if (!permissions.canEdit()) {
+      throw new ApiException(ErrorCode.FORBIDDEN);
+    }
+    post.update(request.title(), request.content(), LocalDateTime.now(clock));
+    return PostResponse.of(post, permissions);
+  }
+
+  /**
+   * POST-05. 작성자 본인 또는 관리자. 소프트 삭제 + 삭제자 기록 (ADM-03). 검사 순서는 수정과 같다.
+   *
+   * @throws ApiException {@code NOT_FOUND}, {@code FORBIDDEN}
+   */
+  @Transactional
+  public void delete(long postId, long userId) {
+    Post post = requirePost(postId);
+    User user = requireUser(userId);
+    if (!PostPermissions.of(post, user).canDelete()) {
+      throw new ApiException(ErrorCode.FORBIDDEN);
+    }
+    post.softDelete(user.getId(), LocalDateTime.now(clock));
+  }
+
   private Post requirePost(long postId) {
     return posts
         .findByIdAndDeletedAtIsNull(postId)

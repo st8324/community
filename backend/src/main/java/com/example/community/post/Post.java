@@ -68,6 +68,19 @@ public class Post {
     return new Post(author, title, content, now);
   }
 
+  /** POST-04. 권한 확인은 호출하는 쪽(PostService)이 먼저 한다. */
+  void update(String title, String content, LocalDateTime now) {
+    this.title = title;
+    this.content = content;
+    this.updatedAt = now;
+  }
+
+  /** POST-05 ①, DATA-03. 행은 지우지 않고 삭제 시각과 삭제자만 기록한다. 권한 확인은 PostService가 먼저 한다. */
+  void softDelete(long deletedBy, LocalDateTime now) {
+    this.deletedAt = now;
+    this.deletedBy = deletedBy;
+  }
+
   public boolean isWrittenBy(long userId) {
     return author.getId() == userId;
   }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import com.example.community.auth.Role;
 import com.example.community.support.AuthFixtures;
@@ -77,7 +78,17 @@ class ResponseExposureSecurityTest {
     // 게시글 목록 — 비회원·관리자 시점 (방금 만든 글이 들어 있는 첫 페이지)
     bodies.add(body(mvc.perform(get("/api/posts")).andReturn()));
     bodies.add(body(mvc.perform(get("/api/posts").cookie(adminToken)).andReturn()));
-    // (수정 PR, 댓글 PR에서 여기에 응답을 추가한다)
+    // 게시글 수정 (작성자 본인 응답)
+    bodies.add(
+        body(
+            mvc.perform(
+                    put("/api/posts/{id}", postId)
+                        .with(csrf())
+                        .cookie(authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JsonBodies.of("title", "t2", "content", "c2")))
+                .andReturn()));
+    // (댓글 PR에서 여기에 댓글 응답을 추가한다)
 
     for (String body : bodies) {
       assertThat(body).as("응답이 비어 있으면 검사가 무의미하다").isNotBlank();
