@@ -3,8 +3,10 @@ package com.example.community.authz;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import com.example.community.auth.Role;
 import com.example.community.support.AuthFixtures;
@@ -111,6 +113,11 @@ class PermissionMatrixTest {
               .content(JsonBodies.of("title", "매트릭스 제목", "content", "매트릭스 본문"));
       case "GET /api/posts" -> get("/api/posts");
       case "GET /api/posts/{id}" -> get("/api/posts/{id}", targetPost(row, actor));
+      case "PUT /api/posts/{id}" ->
+          put("/api/posts/{id}", targetPost(row, actor))
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(JsonBodies.of("title", "수정 제목", "content", "수정 본문"));
+      case "DELETE /api/posts/{id}" -> delete("/api/posts/{id}", targetPost(row, actor));
       default -> {
         fail("%s: '%s'의 실행기가 없다. ACTIVE로 바꾸기 전에 실행기를 추가한다.", row.get("case_id"), endpoint);
         yield null;
