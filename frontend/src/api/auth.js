@@ -1,7 +1,22 @@
-// 자리표시 (F-2 테스트 커밋). 구현은 다음 커밋에서 한다 — 테스트가 "모듈 없음"이 아니라 각 단언에서 실패하게 하려는 것.
-const notImplemented = () => Promise.reject(new Error('F-2 구현 전'));
+// 인증 API (02 문서 5.3절). CSRF·연장·오류 변환은 client.js가 한다.
+import { api } from './client.js';
 
-export const me = notImplemented;
-export const login = notImplemented;
-export const signup = notImplemented;
-export const logout = notImplemented;
+/** 현재 사용자 { id, displayName }. 비로그인이면 ApiError(401). */
+export function me() {
+  return api.get('/api/auth/me');
+}
+
+/** 로그인. 서버가 받는 필드만 골라 보낸다 (그 밖의 필드는 서버도 무시하지만 보내지 않는다, AUTH-01 ④). */
+export function login({ email, password, rememberMe = false }) {
+  return api.post('/api/auth/login', { email, password, rememberMe });
+}
+
+/** 회원가입 — 성공하면 서버가 바로 로그인 쿠키를 준다 (AUTH-01 ①). */
+export function signup({ email, password, rememberMe = false }) {
+  return api.post('/api/auth/signup', { email, password, rememberMe });
+}
+
+/** 로그아웃 — 항상 204 (D-17). 서버가 두 토큰 쿠키를 지우고 리프레시 토큰을 폐기한다. */
+export function logout() {
+  return api.post('/api/auth/logout');
+}

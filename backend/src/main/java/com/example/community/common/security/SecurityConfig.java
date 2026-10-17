@@ -24,6 +24,11 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @EnableWebSecurity
 public class SecurityConfig {
 
+  /** 02 문서 5.8절. 바꾸려면 문서와 {@code HeaderSecurityTest}를 함께 바꾼다. */
+  static final String CONTENT_SECURITY_POLICY =
+      "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+          + " form-action 'self'";
+
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityErrorResponses errors)
       throws Exception {
@@ -35,6 +40,10 @@ public class SecurityConfig {
         .addFilterAt(csrfFilter(errors), CsrfFilter.class)
         // JWT 쿠키 방식 → 서버 세션을 만들지 않는다.
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // SEC-14 (02 5.8절, T-20): 기본 헤더(nosniff, X-Frame-Options DENY, HSTS, Cache-Control)에 CSP를
+        // 더한다.
+        // Vite 빌드 결과는 외부 스크립트·스타일 파일이라 'unsafe-inline' 없이 동작한다.
+        .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY)))
         .httpBasic(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .logout(AbstractHttpConfigurer::disable) // 로그아웃은 AuthController가 쿠키를 지운다 (AUTH-03)

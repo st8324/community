@@ -1,0 +1,64 @@
+/* 최소 스타일. 외부 파일이라 CSP(style-src = 'self')와 맞는다. */
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+}
+
+main,
+.site-header {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.site-header h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.auth-form form {
+  display: grid;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.auth-form .checkbox {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.error {
+  color: #b00020;
+}
+
+[aria-invalid='true'] {
+  border-color: #b00020;
+}
