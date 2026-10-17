@@ -3,8 +3,12 @@ package com.example.community.authz;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import com.example.community.auth.Role;
+import com.example.community.support.AuthFixtures;
+import com.example.community.support.AuthFixtures.Account;
 import com.example.community.support.IntegrationTest;
 import com.example.community.support.JsonBodies;
 import com.example.community.support.SpecCsv;
@@ -37,6 +41,7 @@ class PermissionMatrixTest {
   static final String SPEC = "/authz/permission-matrix.csv";
 
   @Autowired MockMvc mvc;
+  @Autowired AuthFixtures fixtures;
 
   static Stream<Arguments> activeRows() {
     return SpecCsv.read(SPEC).rows().stream()
@@ -84,6 +89,14 @@ class PermissionMatrixTest {
               .content(
                   JsonBodies.of(
                       "email", TestData.uniqueEmail(), "password", TestData.validPassword()));
+      case "POST /api/auth/login" -> {
+        Account account = fixtures.createUser(Role.USER);
+        yield post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(JsonBodies.of("email", account.email(), "password", account.password()));
+      }
+      case "POST /api/auth/logout" -> post("/api/auth/logout");
+      case "GET /api/auth/me" -> get("/api/auth/me");
       default -> {
         fail("%s: '%s'의 실행기가 없다. ACTIVE로 바꾸기 전에 실행기를 추가한다.", row.get("case_id"), endpoint);
         yield null;
@@ -91,13 +104,14 @@ class PermissionMatrixTest {
     };
   }
 
-  /** 행의 actor로 로그인한 토큰 쿠키. GUEST는 null. */
-  private Cookie loginAs(String actor) {
-    if (actor.equals("GUEST")) {
-      return null;
-    }
-    fail("'%s' 로그인은 아직 지원하지 않는다 (로그인 기능 PR에서 추가).", actor);
-    return null;
+  /** 행의 actor로 실제 로그인한 토큰 쿠키. GUEST는 null. */
+  private Cookie loginAs(String actor) throws Exception {
+    return switch (actor) {
+      case "GUEST" -> null;
+      case "USER" -> fixtures.loginAsNew(Role.USER);
+      case "ADMIN" -> fixtures.loginAsNew(Role.ADMIN);
+      default -> throw new IllegalArgumentException(actor);
+    };
   }
 
   private static void assertFlag(String body, String field, String expected, String caseId) {
