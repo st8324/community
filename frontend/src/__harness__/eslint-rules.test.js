@@ -97,6 +97,60 @@ describe('ESLint 보안·하네스 규칙이 살아 있다', () => {
     expect(await ruleIdsFor(code)).toContain('no-eval');
   });
 
+  // (v0.7, HD-31) no-restricted-globals는 전역 "이름"만 잡는다. 전역 객체를 거치는 우회 경로를 막는다.
+  it.each([
+    ['window.fetch', "export function f() { return window.fetch('/api/posts'); }"],
+    ['globalThis.fetch', "export function f() { return globalThis.fetch('/api/posts'); }"],
+    ['self.fetch', "export function f() { return self.fetch('/api/posts'); }"],
+    ['구조 분해 { fetch } = window', 'const { fetch: f } = window;\nexport default f;'],
+    ['window.localStorage', "export function f(t) { window.localStorage.setItem('k', t); }"],
+    [
+      'globalThis.sessionStorage',
+      "export function f(t) { globalThis.sessionStorage.setItem('k', t); }",
+    ],
+    ['document.cookie 읽기', 'export function f() { return document.cookie; }'],
+    ['document.cookie 쓰기', "export function f() { document.cookie = 'a=b'; }"],
+  ])('src/api 밖에서 %s 금지 (SEC-05)', async (_name, code) => {
+    expect(await ruleIdsFor(code)).toContain('no-restricted-properties');
+  });
+
+  it('src/api 안에서는 window.fetch와 document.cookie를 허용한다', async () => {
+    const code = "export function f() { return [window.fetch('/api/x'), document.cookie]; }";
+    const ids = await ruleIdsFor(code, 'src/api/client.js');
+    expect(ids).not.toContain('no-restricted-properties');
+  });
+
+  it('src/api 안에서도 window.localStorage는 금지한다', async () => {
+    const code = "export function f(t) { window.localStorage.setItem('k', t); }";
+    expect(await ruleIdsFor(code, 'src/api/client.js')).toContain('no-restricted-properties');
+  });
+
+  it.each([
+    ["vi.stubGlobal('fetch')", "import { vi } from 'vitest';\nvi.stubGlobal('fetch', vi.fn());"],
+    [
+      "vi.spyOn(globalThis, 'fetch')",
+      "import { vi } from 'vitest';\nvi.spyOn(globalThis, 'fetch');",
+    ],
+  ])('src/api 밖의 테스트에서 %s 금지 (HD-29)', async (_name, code) => {
+    const ids = await ruleIdsFor(code, 'src/features/Example.test.jsx');
+    expect(ids).toContain('no-restricted-syntax');
+  });
+
+  it("src/api 테스트에서는 vi.stubGlobal('fetch')를 허용하고 .only는 여전히 금지한다", async () => {
+    const code =
+      "import { it, vi } from 'vitest';\nvi.stubGlobal('fetch', vi.fn());\nit.only('x', () => {});";
+    const ids = await ruleIdsFor(code, 'src/api/client.test.js');
+    expect(ids).not.toContain('no-restricted-syntax');
+    expect(ids).toContain('no-restricted-properties');
+  });
+
+  it('src/api 밖의 테스트 파일에서도 .only 금지와 window.fetch 금지가 함께 살아 있다', async () => {
+    const code =
+      "import { it } from 'vitest';\nit.only('x', () => {});\nexport const f = () => window.fetch('/api/x');";
+    const ids = await ruleIdsFor(code, 'src/features/Example.test.jsx');
+    expect(ids.filter((id) => id === 'no-restricted-properties')).toHaveLength(2);
+  });
+
   it('테스트 파일에서 .only / .skip을 금지한다', async () => {
     const code = "import { it } from 'vitest';\nit.only('x', () => {});\nit.skip('y', () => {});";
     const ids = await ruleIdsFor(code, 'src/features/Example.test.jsx');
