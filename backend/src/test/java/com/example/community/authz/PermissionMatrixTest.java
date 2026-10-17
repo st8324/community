@@ -109,6 +109,7 @@ class PermissionMatrixTest {
           post("/api/posts")
               .contentType(MediaType.APPLICATION_JSON)
               .content(JsonBodies.of("title", "매트릭스 제목", "content", "매트릭스 본문"));
+      case "GET /api/posts" -> get("/api/posts");
       case "GET /api/posts/{id}" -> get("/api/posts/{id}", targetPost(row, actor));
       default -> {
         fail("%s: '%s'의 실행기가 없다. ACTIVE로 바꾸기 전에 실행기를 추가한다.", row.get("case_id"), endpoint);
