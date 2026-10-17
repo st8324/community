@@ -32,18 +32,18 @@ public class AuthService {
   }
 
   /**
-   * AUTH-01. 역할은 항상 USER (요청으로 정할 수 없음).
+   * AUTH-01. 역할은 항상 USER (요청으로 정할 수 없음). 저장된 사용자를 돌려준다 — 컨트롤러가 바로 로그인 처리(D-15).
    *
    * @throws ApiException {@code EMAIL_ALREADY_USED} — 중복 (409)
    */
-  public void signup(SignupRequest request) {
+  public User signup(SignupRequest request) {
     if (users.existsByEmail(request.email())) {
       throw new ApiException(ErrorCode.EMAIL_ALREADY_USED);
     }
     String hash = passwordEncoder.encode(request.password());
     User user = User.create(request.email(), hash, Role.USER, LocalDateTime.now(clock));
     try {
-      users.save(user);
+      return users.save(user);
     } catch (DataIntegrityViolationException e) {
       // 위 exists 확인과 저장 사이에 같은 이메일이 먼저 저장된 경우(동시 요청). 최종 판단은 DB 유일 제약이 한다.
       throw new ApiException(ErrorCode.EMAIL_ALREADY_USED);

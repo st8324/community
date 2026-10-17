@@ -8,9 +8,12 @@ import com.example.community.auth.Role;
 import com.example.community.support.AuthFixtures;
 import com.example.community.support.AuthFixtures.Account;
 import com.example.community.support.IntegrationTest;
+import com.example.community.support.JsonBodies;
+import com.example.community.support.TestData;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -29,6 +32,29 @@ class CookieSecurityTest {
   void loginCookieAttributes() throws Exception {
     Account account = fixtures.createUser(Role.USER);
     MvcResult result = fixtures.loginResult(account.email(), account.password());
+    String line = AuthFixtures.accessTokenSetCookie(result).orElseThrow();
+
+    assertThat(line)
+        .contains("HttpOnly")
+        .contains("Secure")
+        .contains("SameSite=Strict")
+        .contains("Path=/")
+        .contains("Max-Age=3600")
+        .doesNotContainIgnoringCase("Domain=");
+  }
+
+  /** 가입 직후 자동 로그인(01 v0.4 AUTH-01 ①)도 S-05와 같은 속성의 쿠키를 발급한다. */
+  @Test
+  void 가입_응답의_토큰_쿠키도_로그인과_같은_속성이다() throws Exception {
+    MvcResult result =
+        mvc.perform(
+                post("/api/auth/signup")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        JsonBodies.of(
+                            "email", TestData.uniqueEmail(), "password", TestData.validPassword())))
+            .andReturn();
     String line = AuthFixtures.accessTokenSetCookie(result).orElseThrow();
 
     assertThat(line)

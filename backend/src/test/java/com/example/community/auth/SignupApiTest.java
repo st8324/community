@@ -5,27 +5,29 @@ import static com.example.community.support.TestData.validPassword;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.community.support.AuthFixtures;
 import com.example.community.support.IntegrationTest;
 import com.example.community.support.JsonBodies;
-import java.util.List;
+import com.jayway.jsonpath.JsonPath;
+import jakarta.servlet.http.Cookie;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
-/** AUTH-01 회원가입 수용 기준 (01 문서 v0.3 4.1절). */
+/** AUTH-01 회원가입 수용 기준 (01 문서 v0.4 4.1절). 쿠키 속성은 CookieSecurityTest. */
 @IntegrationTest
 class SignupApiTest {
 
@@ -54,20 +56,47 @@ class SignupApiTest {
     return jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE email = ?", Long.class, email);
   }
 
-  // ── ① 성공 ─────────────────────────────────────────────
+  // ── ① 성공 + 가입 직후 자동 로그인 (01 v0.4, D-15) ──────────────
 
   @Test
-  void 올바른_이메일과_비밀번호로_가입하면_201이고_응답_본문이_없다() throws Exception {
-    signup(body(uniqueEmail(), validPassword()))
-        .andExpect(status().isCreated())
-        .andExpect(content().string(""));
+  void 올바른_이메일과_비밀번호로_가입하면_201이고_id와_마스킹된_표시명을_돌려준다() throws Exception {
+    String email = uniqueEmail();
+    MvcResult result =
+        signup(body(email, validPassword()))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").isNumber())
+            .andExpect(
+                jsonPath("$.displayName")
+                    .value(email.substring(0, 2) + "***" + email.substring(email.indexOf('@'))))
+            .andExpect(jsonPath("$.email").doesNotExist())
+            .andExpect(jsonPath("$.role").doesNotExist())
+            .andReturn();
+    assertThat(result.getResponse().getContentAsString(StandardCharsets.UTF_8))
+        .doesNotContain(email);
   }
 
   @Test
-  void 가입만으로는_로그인되지_않는다_토큰_쿠키를_발급하지_않는다() throws Exception {
+  void 가입하면_바로_로그인된다_받은_토큰_쿠키로_me를_호출할_수_있다() throws Exception {
     MvcResult result = signup(body(uniqueEmail(), validPassword())).andReturn();
-    List<String> setCookies = result.getResponse().getHeaders(HttpHeaders.SET_COOKIE);
-    assertThat(setCookies).noneMatch(c -> c.startsWith("access_token="));
+    String line = AuthFixtures.accessTokenSetCookie(result).orElseThrow();
+    Cookie token = new Cookie(AuthFixtures.ACCESS_TOKEN, AuthFixtures.cookieValue(line));
+    Number id =
+        JsonPath.read(result.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.id");
+
+    mvc.perform(get("/api/auth/me").cookie(token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(id.longValue()));
+  }
+
+  @Test
+  void 가입에_실패하면_토큰_쿠키를_발급하지_않는다() throws Exception {
+    String email = uniqueEmail();
+    signup(body(email, validPassword())).andExpect(status().isCreated());
+
+    MvcResult duplicate = signup(body(email, validPassword())).andReturn();
+    MvcResult invalid = signup(body(uniqueEmail(), "short")).andReturn();
+    assertThat(AuthFixtures.accessTokenSetCookie(duplicate)).isEmpty();
+    assertThat(AuthFixtures.accessTokenSetCookie(invalid)).isEmpty();
   }
 
   // ── ② ③ 중복 ───────────────────────────────────────────
