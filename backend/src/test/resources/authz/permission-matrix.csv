@@ -8,7 +8,7 @@
 # 규칙: 모든 요청은 유효한 CSRF 토큰을 포함한다고 가정한다. CSRF 누락은 보안 회귀 목록(S-06)에서 따로 검증한다.
 # 규칙: 기능 PR은 해당 행을 ACTIVE로 바꾸고 PermissionMatrixTest가 그 행을 통과해야 병합할 수 있다.
 case_id,req_id,method,path,actor,target,expected,can_edit,can_delete,state
-M-01,AUTH-01,POST,/api/auth/signup,GUEST,NONE,201,-,-,PENDING
+M-01,AUTH-01,POST,/api/auth/signup,GUEST,NONE,201,-,-,ACTIVE
 M-02,AUTH-01,POST,/api/auth/signup,USER,NONE,N/A,-,-,N/A
 M-03,AUTH-01,POST,/api/auth/signup,ADMIN,NONE,N/A,-,-,N/A
 M-04,AUTH-02,POST,/api/auth/login,GUEST,NONE,200,-,-,PENDING
