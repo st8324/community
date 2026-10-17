@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -33,6 +34,15 @@ public class PostController {
       @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody PostRequest request) {
     PostResponse created = postService.create(userId(jwt), request);
     return ResponseEntity.created(URI.create("/api/posts/" + created.id())).body(created);
+  }
+
+  /**
+   * POST-02: 누구나. {@code page}는 0부터, 생략·빈 값이면 0. 숫자가 아니면 형 변환 실패 → 400 {@code INVALID_REQUEST}. 크기
+   * 파라미터는 받지 않는다 (01 D-21).
+   */
+  @GetMapping
+  public PostListResponse list(@RequestParam(name = "page", defaultValue = "0") int page) {
+    return postService.list(page);
   }
 
   /** POST-03: 누구나. 요청자 기준 canEdit/canDelete. */

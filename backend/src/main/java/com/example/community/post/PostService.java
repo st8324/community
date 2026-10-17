@@ -6,6 +6,9 @@ import com.example.community.common.error.ApiException;
 import com.example.community.common.error.ErrorCode;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class PostService {
+
+  /** A-4 (확인 필요 항목). 클라이언트 입력으로 바꿀 수 없다 (01 D-21). */
+  static final int PAGE_SIZE = 20;
+
+  /** POST-02 ① 최신순. 같은 시각이면 나중에 저장된(id가 큰) 글이 먼저. 인덱스 ix_posts_list와 같은 순서. */
+  static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
 
   private final PostRepository posts;
   private final UserRepository users;
@@ -48,6 +57,25 @@ public class PostService {
     Post post = requirePost(postId);
     User viewer = viewerId == null ? null : requireUser(viewerId);
     return PostResponse.of(post, PostPermissions.of(post, viewer));
+  }
+
+  /**
+   * POST-02. 크기는 서버 고정(클라이언트가 바꿀 수 없음), 최신순(작성 시각 → id 내림차순). 범위를 넘는 페이지는 빈 목록.
+   *
+   * @throws ApiException {@code VALIDATION_FAILED}, fields=["page"] — 음수 (01 D-21)
+   */
+  @Transactional(readOnly = true)
+  public PostListResponse list(int page) {
+    if (page < 0) {
+      throw new ApiException(ErrorCode.VALIDATION_FAILED, List.of("page"));
+    }
+    if ((long) page * PAGE_SIZE > Integer.MAX_VALUE) {
+      // JPA의 시작 위치(firstResult)는 int다. 그대로 넘기면 예외 → 500이 된다. 이런 페이지는 어차피 마지막을 넘으므로 빈 목록 (POST-02
+      // ④).
+      return PostListResponse.beyondLastPage(page, PAGE_SIZE, posts.countByDeletedAtIsNull());
+    }
+    PageRequest request = PageRequest.of(page, PAGE_SIZE, NEWEST_FIRST);
+    return PostListResponse.of(posts.findByDeletedAtIsNull(request));
   }
 
   private Post requirePost(long postId) {
