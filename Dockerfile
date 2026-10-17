@@ -23,6 +23,12 @@ FROM eclipse-temurin:21-jre AS runtime
 # 베이스 이미지에 들어 있는 pebble(Ubuntu 서비스 관리자, Go 바이너리)은 이 앱에서 쓰지 않는다 (ENTRYPOINT는 java).
 # dpkg 패키지가 아니라 파일로만 들어 있어 직접 삭제한다. 취약한 Go 런타임 포함: CVE-2026-78667, -78669, -97031 (03 문서 HD-16)
 RUN rm -f /usr/bin/pebble
+# CVE-2026-92392 (HIGH, curl HTTP/2 업로드 Use-After-Free): 베이스 이미지의 curl·libcurl4t64(8.18.0-1ubuntu2.7)에 수정 버전이 나왔지만
+# 아직 베이스 이미지에 반영되지 않았다. 해당 패키지만 보안 업데이트로 올린다 (예외 등록 대신 실제 수정, 03 문서 HD-15·HD-24).
+# 베이스 이미지(eclipse-temurin:21-jre)가 2ubuntu2.8 이상을 포함하면 이 RUN을 지운다.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade curl libcurl4t64 \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system app && useradd --system --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=backend /app/backend/build/libs/*.jar /app/app.jar
