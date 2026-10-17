@@ -11,6 +11,7 @@ import com.example.community.support.AuthFixtures;
 import com.example.community.support.AuthFixtures.Account;
 import com.example.community.support.IntegrationTest;
 import com.example.community.support.JsonBodies;
+import com.example.community.support.PostFixtures;
 import com.example.community.support.SpecCsv;
 import com.example.community.support.TestData;
 import com.jayway.jsonpath.JsonPath;
@@ -42,6 +43,10 @@ class PermissionMatrixTest {
 
   @Autowired MockMvc mvc;
   @Autowired AuthFixtures fixtures;
+  @Autowired PostFixtures posts;
+
+  /** 행의 actor로 로그인한 상태. GUEST는 계정·쿠키 없음. */
+  record Actor(Account account, Cookie[] cookies) {}
 
   static Stream<Arguments> activeRows() {
     return SpecCsv.read(SPEC).rows().stream()
@@ -63,10 +68,11 @@ class PermissionMatrixTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("activeRows")
   void 권한_매트릭스_행의_기대값을_만족한다(Map<String, String> row) throws Exception {
-    MockHttpServletRequestBuilder request = requestFor(row);
-    Cookie[] session = loginAs(row.get("actor"));
-    if (session.length > 0) {
-      request.cookie(session);
+    // 03 문서 HD-27: actor 로그인 → (대상 리소스 생성) → 요청
+    Actor actor = loginAs(row.get("actor"));
+    MockHttpServletRequestBuilder request = requestFor(row, actor);
+    if (actor.cookies().length > 0) {
+      request.cookie(actor.cookies());
     }
 
     MvcResult result = mvc.perform(request.with(csrf())).andReturn();
@@ -80,7 +86,7 @@ class PermissionMatrixTest {
   }
 
   /** 엔드포인트별 실행기. 새 기능 PR은 여기에 case를 추가하고 해당 CSV 행을 ACTIVE로 바꾼다. */
-  private MockHttpServletRequestBuilder requestFor(Map<String, String> row) {
+  private MockHttpServletRequestBuilder requestFor(Map<String, String> row, Actor actor) {
     String endpoint = row.get("method") + " " + row.get("path");
     return switch (endpoint) {
       case "POST /api/auth/signup" ->
@@ -98,6 +104,12 @@ class PermissionMatrixTest {
       case "POST /api/auth/logout" -> post("/api/auth/logout");
       case "POST /api/auth/refresh" -> post("/api/auth/refresh");
       case "GET /api/auth/me" -> get("/api/auth/me");
+      // ── 게시글 (01 v0.5) ──
+      case "POST /api/posts" ->
+          post("/api/posts")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(JsonBodies.of("title", "매트릭스 제목", "content", "매트릭스 본문"));
+      case "GET /api/posts/{id}" -> get("/api/posts/{id}", targetPost(row, actor));
       default -> {
         fail("%s: '%s'의 실행기가 없다. ACTIVE로 바꾸기 전에 실행기를 추가한다.", row.get("case_id"), endpoint);
         yield null;
@@ -106,15 +118,36 @@ class PermissionMatrixTest {
   }
 
   /**
-   * 행의 actor로 실제 로그인한 세션 쿠키 (03 문서 HD-23). USER·ADMIN은 rememberMe=true 로그인 → 액세스·리프레시 쿠키, GUEST는 쿠키
-   * 없음.
+   * 행의 actor로 실제 로그인한 상태 (03 문서 HD-23). USER·ADMIN은 매번 새 계정으로 rememberMe=true 로그인 → 액세스·리프레시 쿠키,
+   * GUEST는 계정·쿠키 없음.
    */
-  private Cookie[] loginAs(String actor) throws Exception {
+  private Actor loginAs(String actor) throws Exception {
     return switch (actor) {
-      case "GUEST" -> new Cookie[0];
-      case "USER" -> fixtures.loginRememberedAsNew(Role.USER).cookies();
-      case "ADMIN" -> fixtures.loginRememberedAsNew(Role.ADMIN).cookies();
+      case "GUEST" -> new Actor(null, new Cookie[0]);
+      case "USER", "ADMIN" -> {
+        Account account = fixtures.createUser(Role.valueOf(actor));
+        yield new Actor(account, fixtures.loginRemembered(account).cookies());
+      }
       default -> throw new IllegalArgumentException(actor);
+    };
+  }
+
+  /**
+   * 행의 target에 맞는 글을 저장소에 직접 만든다 (03 문서 HD-27). OWN = actor의 글, OTHER = 새 일반 회원의 글.
+   *
+   * @return 글 id
+   */
+  private long targetPost(Map<String, String> row, Actor actor) {
+    return switch (row.get("target")) {
+      case "OWN" -> {
+        if (actor.account() == null) {
+          throw new IllegalStateException(row.get("case_id") + ": GUEST에는 OWN 대상이 없다");
+        }
+        yield posts.create(actor.account().id());
+      }
+      case "OTHER" -> posts.create(fixtures.createUser(Role.USER).id());
+      default ->
+          throw new IllegalStateException(row.get("case_id") + ": 글 대상이 필요한 행인데 target=NONE");
     };
   }
 
