@@ -23,6 +23,11 @@ public class CookieBearerTokenResolver implements BearerTokenResolver {
 
   @Override
   public String resolve(HttpServletRequest request) {
+    // 02 T-22: 화면·정적 파일(permitAll, 인증 안 씀)에서는 토큰을 읽지 않는다. 액세스 쿠키는 Path=/라 모든 요청에 실리는데,
+    // 여기서 읽으면 무효 토큰 쿠키가 남았을 때 index.html·assets까지 401이 돼 앱이 뜨지 않는다.
+    if (!request.getRequestURI().startsWith("/api/")) {
+      return null;
+    }
     if (IGNORE_TOKEN_PATHS.contains(request.getRequestURI())) {
       return null;
     }

@@ -13,6 +13,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  web:
+    resources:
+      add-mappings: false # 정적 파일은 SpaForwardingConfig 한 곳에서 처리한다 (02 T-18)
 
 server:
   error: # SEC-10: 오류 응답에 내부 정보 노출 금지
