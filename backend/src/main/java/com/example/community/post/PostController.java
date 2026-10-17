@@ -5,9 +5,11 @@ import java.net.URI;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,6 +51,23 @@ public class PostController {
   @GetMapping("/{id}")
   public PostResponse get(@PathVariable("id") long id, @AuthenticationPrincipal Jwt jwt) {
     return postService.get(id, jwt == null ? null : userId(jwt));
+  }
+
+  /** POST-04: 200 + 상세 형태. 입력 검증(@Valid, 400)이 서비스의 404·403 확인보다 먼저다 (01 D-24). */
+  @PutMapping("/{id}")
+  public PostResponse update(
+      @PathVariable("id") long id,
+      @AuthenticationPrincipal Jwt jwt,
+      @Valid @RequestBody PostRequest request) {
+    return postService.update(id, userId(jwt), request);
+  }
+
+  /** POST-05: 204, 본문 없음. */
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(
+      @PathVariable("id") long id, @AuthenticationPrincipal Jwt jwt) {
+    postService.delete(id, userId(jwt));
+    return ResponseEntity.noContent().build();
   }
 
   /** sub는 디코더가 숫자임을 이미 검증했다 (JwtConfig). */
