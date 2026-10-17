@@ -14,6 +14,37 @@ const restrictedGlobals = [
   { name: 'sessionStorage', message: '브라우저 저장소에 토큰·개인정보를 두지 않는다 (SEC-05).' },
 ];
 
+// (03 HD-31) no-restricted-globals는 전역 "이름"만 잡는다 → window.fetch 등 전역 객체를 거치는 경로도 막는다.
+const GLOBAL_OBJECTS = ['window', 'globalThis', 'self'];
+const globalProperty = (property, message) =>
+  GLOBAL_OBJECTS.map((object) => ({ object, property, message }));
+const storageProperties = ['localStorage', 'sessionStorage'].flatMap((name) =>
+  globalProperty(name, restrictedGlobals.find((g) => g.name === name).message),
+);
+const apiOnlyProperties = [
+  ...globalProperty('fetch', restrictedGlobals.find((g) => g.name === 'fetch').message),
+  {
+    object: 'document',
+    property: 'cookie',
+    message: '쿠키는 src/api/에서만 읽는다 (XSRF-TOKEN 하나뿐, SEC-05). 토큰 쿠키는 HttpOnly다.',
+  },
+];
+// 테스트에서 fetch를 가짜로 바꾸는 것도 src/api/ 테스트에서만 (03 HD-29) — 화면 테스트는 API 모듈 함수를 가짜로.
+const fetchStubs = [
+  {
+    selector:
+      "CallExpression[callee.object.name='vi'][callee.property.name='stubGlobal'][arguments.0.value='fetch']",
+    message:
+      'fetch 가짜는 src/api/ 테스트에서만 쓴다. 화면 테스트는 src/api 모듈 함수를 가짜로 바꾼다 (HD-29).',
+  },
+  {
+    selector:
+      "CallExpression[callee.object.name='vi'][callee.property.name='spyOn'][arguments.1.value='fetch']",
+    message:
+      'fetch 가짜는 src/api/ 테스트에서만 쓴다. 화면 테스트는 src/api 모듈 함수를 가짜로 바꾼다 (HD-29).',
+  },
+];
+
 const focusedOrSkippedTests = ['describe', 'it', 'test'].flatMap((object) =>
   ['only', 'skip'].map((property) => ({
     object,
@@ -75,20 +106,36 @@ export default [
       'no-unsanitized/method': 'error',
       'no-unsanitized/property': 'error',
       'no-restricted-globals': ['error', ...restrictedGlobals],
+      'no-restricted-properties': ['error', ...storageProperties, ...apiOnlyProperties],
       'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
   {
-    // API 모듈만 fetch 허용 (저장소 금지는 유지)
+    // API 모듈만 fetch·document.cookie 허용 (저장소 금지는 유지)
     files: ['src/api/**/*.js'],
     rules: {
       'no-restricted-globals': ['error', ...restrictedGlobals.filter((g) => g.name !== 'fetch')],
+      'no-restricted-properties': ['error', ...storageProperties],
     },
   },
   {
+    // 규칙 값은 합쳐지지 않고 덮어써진다 → 테스트 파일에도 위 목록을 다시 넣는다.
     files: ['**/*.test.{js,jsx}', 'src/test/**/*.js'],
     rules: {
-      'no-restricted-properties': ['error', ...focusedOrSkippedTests],
+      'no-restricted-properties': [
+        'error',
+        ...storageProperties,
+        ...apiOnlyProperties,
+        ...focusedOrSkippedTests,
+      ],
+      'no-restricted-syntax': ['error', ...fetchStubs],
+    },
+  },
+  {
+    files: ['src/api/**/*.test.js'],
+    rules: {
+      'no-restricted-properties': ['error', ...storageProperties, ...focusedOrSkippedTests],
+      'no-restricted-syntax': 'off',
     },
   },
   {
