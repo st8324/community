@@ -64,9 +64,9 @@ class PermissionMatrixTest {
   @MethodSource("activeRows")
   void 권한_매트릭스_행의_기대값을_만족한다(Map<String, String> row) throws Exception {
     MockHttpServletRequestBuilder request = requestFor(row);
-    Cookie accessToken = loginAs(row.get("actor"));
-    if (accessToken != null) {
-      request.cookie(accessToken);
+    Cookie[] session = loginAs(row.get("actor"));
+    if (session.length > 0) {
+      request.cookie(session);
     }
 
     MvcResult result = mvc.perform(request.with(csrf())).andReturn();
@@ -96,6 +96,7 @@ class PermissionMatrixTest {
             .content(JsonBodies.of("email", account.email(), "password", account.password()));
       }
       case "POST /api/auth/logout" -> post("/api/auth/logout");
+      case "POST /api/auth/refresh" -> post("/api/auth/refresh");
       case "GET /api/auth/me" -> get("/api/auth/me");
       default -> {
         fail("%s: '%s'의 실행기가 없다. ACTIVE로 바꾸기 전에 실행기를 추가한다.", row.get("case_id"), endpoint);
@@ -104,12 +105,15 @@ class PermissionMatrixTest {
     };
   }
 
-  /** 행의 actor로 실제 로그인한 토큰 쿠키. GUEST는 null. */
-  private Cookie loginAs(String actor) throws Exception {
+  /**
+   * 행의 actor로 실제 로그인한 세션 쿠키 (03 문서 HD-23). USER·ADMIN은 rememberMe=true 로그인 → 액세스·리프레시 쿠키, GUEST는 쿠키
+   * 없음.
+   */
+  private Cookie[] loginAs(String actor) throws Exception {
     return switch (actor) {
-      case "GUEST" -> null;
-      case "USER" -> fixtures.loginAsNew(Role.USER);
-      case "ADMIN" -> fixtures.loginAsNew(Role.ADMIN);
+      case "GUEST" -> new Cookie[0];
+      case "USER" -> fixtures.loginRememberedAsNew(Role.USER).cookies();
+      case "ADMIN" -> fixtures.loginRememberedAsNew(Role.ADMIN).cookies();
       default -> throw new IllegalArgumentException(actor);
     };
   }

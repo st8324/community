@@ -91,9 +91,23 @@ class SessionApiTest {
     mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
   }
 
+  /** AUTH-03 ③ (01 v0.4 D-17): 로그아웃은 로그인 없이도 호출할 수 있고 항상 204 (멱등). */
   @Test
-  void 토큰_없이_로그아웃하면_401이다() throws Exception {
-    mvc.perform(post("/api/auth/logout").with(csrf())).andExpect(status().isUnauthorized());
+  void 토큰_없이_로그아웃해도_204다() throws Exception {
+    mvc.perform(post("/api/auth/logout").with(csrf())).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void 망가진_토큰으로_로그아웃해도_204이고_쿠키를_지운다() throws Exception {
+    MvcResult result =
+        mvc.perform(
+                post("/api/auth/logout")
+                    .with(csrf())
+                    .cookie(new Cookie(AuthFixtures.ACCESS_TOKEN, "not-a-jwt")))
+            .andExpect(status().isNoContent())
+            .andReturn();
+    assertThat(AuthFixtures.accessTokenSetCookie(result))
+        .hasValueSatisfying(line -> assertThat(line).contains("Max-Age=0"));
   }
 
   /**

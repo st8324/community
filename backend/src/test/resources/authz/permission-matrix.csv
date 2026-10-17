@@ -7,6 +7,7 @@
 #   state          PENDING(기능 미구현) → ACTIVE(PermissionMatrixTest가 실제로 검증) / N/A
 # 규칙: 모든 요청은 유효한 CSRF 토큰을 포함한다고 가정한다. CSRF 누락은 보안 회귀 목록(S-06)에서 따로 검증한다.
 # 규칙: 기능 PR은 해당 행을 ACTIVE로 바꾸고 PermissionMatrixTest가 그 행을 통과해야 병합할 수 있다.
+# 규칙(03 v0.5 HD-23): USER·ADMIN은 rememberMe=true로 로그인한 세션(액세스+리프레시 쿠키), GUEST는 쿠키 없음.
 case_id,req_id,method,path,actor,target,expected,can_edit,can_delete,state
 M-01,AUTH-01,POST,/api/auth/signup,GUEST,NONE,201,-,-,ACTIVE
 M-02,AUTH-01,POST,/api/auth/signup,USER,NONE,N/A,-,-,N/A
@@ -14,7 +15,7 @@ M-03,AUTH-01,POST,/api/auth/signup,ADMIN,NONE,N/A,-,-,N/A
 M-04,AUTH-02,POST,/api/auth/login,GUEST,NONE,200,-,-,ACTIVE
 M-05,AUTH-02,POST,/api/auth/login,USER,NONE,N/A,-,-,N/A
 M-06,AUTH-02,POST,/api/auth/login,ADMIN,NONE,N/A,-,-,N/A
-M-07,AUTH-03,POST,/api/auth/logout,GUEST,NONE,401,-,-,ACTIVE
+M-07,AUTH-03,POST,/api/auth/logout,GUEST,NONE,204,-,-,ACTIVE
 M-08,AUTH-03,POST,/api/auth/logout,USER,NONE,204,-,-,ACTIVE
 M-09,AUTH-03,POST,/api/auth/logout,ADMIN,NONE,204,-,-,ACTIVE
 M-10,AUTH-05,GET,/api/auth/me,GUEST,NONE,401,-,-,ACTIVE
@@ -54,3 +55,6 @@ M-43,CMT-03,DELETE,/api/comments/{id},USER,OWN,204,-,-,PENDING
 M-44,CMT-03,DELETE,/api/comments/{id},USER,OTHER,403,-,-,PENDING
 M-45,CMT-03,DELETE,/api/comments/{id},ADMIN,OWN,204,-,-,PENDING
 M-46,CMT-03,DELETE,/api/comments/{id},ADMIN,OTHER,204,-,-,PENDING
+M-47,AUTH-06,POST,/api/auth/refresh,GUEST,NONE,401,-,-,ACTIVE
+M-48,AUTH-06,POST,/api/auth/refresh,USER,NONE,200,-,-,ACTIVE
+M-49,AUTH-06,POST,/api/auth/refresh,ADMIN,NONE,200,-,-,ACTIVE

@@ -43,7 +43,13 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.GET, "/api/csrf")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login")
+                    // 로그인 없이 호출하는 인증 API. 연장은 리프레시 쿠키로, 로그아웃은 항상 204 (01 v0.4 D-17)
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/auth/signup",
+                        "/api/auth/login",
+                        "/api/auth/refresh",
+                        "/api/auth/logout")
                     .permitAll()
                     // 나머지 /api/**는 로그인 필요. 공개 조회 API는 해당 기능 PR에서 여기 명시적으로 연다.
                     .requestMatchers("/api/**")

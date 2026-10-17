@@ -31,7 +31,7 @@ class SecurityRegressionSpecTest {
   static final Set<String> REQUIRED_REQ_IDS =
       Set.of(
           "SEC-02", "SEC-03", "SEC-04", "SEC-05", "SEC-06", "SEC-08", "SEC-10", "SEC-13", "SEC-14",
-          "DATA-05", "AUTH-02");
+          "SEC-16", "DATA-05", "AUTH-02");
 
   static SpecCsv.Table table;
 

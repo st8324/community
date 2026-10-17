@@ -42,6 +42,7 @@ class PermissionMatrixSpecTest {
           "POST /api/auth/signup",
           "POST /api/auth/login",
           "POST /api/auth/logout",
+          "POST /api/auth/refresh",
           "GET /api/auth/me",
           "GET /api/posts",
           "GET /api/posts/{id}",
@@ -167,14 +168,15 @@ class PermissionMatrixSpecTest {
             });
   }
 
+  /** 로그인 없이 호출하는 상태 변경 API (01 v0.4: 로그아웃은 항상 204, D-17 — 03 HD-22). */
+  static final Set<String> NO_LOGIN_REQUIRED =
+      Set.of("/api/auth/signup", "/api/auth/login", "/api/auth/logout");
+
   @Test
   void 비회원의_로그인_필요_요청은_401이다() {
     table.rows().stream()
         .filter(r -> r.get("actor").equals("GUEST") && !r.get("method").equals("GET"))
-        .filter(
-            r ->
-                !r.get("path").equals("/api/auth/signup")
-                    && !r.get("path").equals("/api/auth/login"))
+        .filter(r -> !NO_LOGIN_REQUIRED.contains(r.get("path")))
         .forEach(r -> assertThat(r.get("expected")).as(r.get("case_id")).isEqualTo("401"));
   }
 
