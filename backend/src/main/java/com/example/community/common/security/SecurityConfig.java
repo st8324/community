@@ -51,6 +51,9 @@ public class SecurityConfig {
                         "/api/auth/refresh",
                         "/api/auth/logout")
                     .permitAll()
+                    // 공개 조회 API (01 3.1 매트릭스). 단 무효 토큰 쿠키가 오면 인가 전에 401이 난다 (01 D-20, 02 4.3절).
+                    .requestMatchers(HttpMethod.GET, "/api/posts/{id}")
+                    .permitAll()
                     // 나머지 /api/**는 로그인 필요. 공개 조회 API는 해당 기능 PR에서 여기 명시적으로 연다.
                     .requestMatchers("/api/**")
                     .authenticated()
