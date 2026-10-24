@@ -1,0 +1,41 @@
+/* 최소 스타일. 게시글 본문의 줄바꿈은 CSS로만 보여 준다 (HTML로 바꾸지 않음, SEC-08). */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+.site-header {
+  border-bottom: 1px solid #ddd;
+}
+
+.site-header nav,
+main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-header .brand {
+  margin-right: auto;
+  font-weight: bold;
+}
+
+label {
+  display: inline-block;
+  min-width: 6rem;
+}
+
+[role='alert'] {
+  color: #b00020;
+}
+
+[aria-invalid='true'] {
+  border-color: #b00020;
+}
