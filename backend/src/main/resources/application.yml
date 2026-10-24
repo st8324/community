@@ -29,6 +29,10 @@ community:
     ttl: 1h # A-5. 토큰 exp와 쿠키 Max-Age에 같이 쓴다
   refresh:
     ttl: 14d # A-7. 로그인 상태 유지 기간 (최초 로그인 기준 절대 만료)
+  admin:
+    # ADM-01: 관리자 시드. 값은 환경변수로만 넣는다. 둘 중 하나라도 없으면 시드를 건너뛰고 경고만 남긴다.
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
 
 management:
   endpoints:
