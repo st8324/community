@@ -75,6 +75,16 @@ tasks.test {
     systemProperty("harness.reportDir", layout.buildDirectory.dir("harness").get().asFile.absolutePath)
     // -Pharness.strict=true 이면 PENDING 항목이 하나라도 남아 있을 때 실패 (03 문서 H-Q3)
     systemProperty("harness.strict", providers.gradleProperty("harness.strict").getOrElse("false"))
+    // CI에서 실패한 테스트를 GitHub 주석(::error)으로도 남긴다 — 로그 전체를 내려받지 못하는 환경에서도 원인(예외 첫 줄)을 볼 수 있게.
+    afterTest(
+        KotlinClosure2<TestDescriptor, TestResult, Unit>({ desc, result ->
+            if (System.getenv("GITHUB_ACTIONS") == "true" && result.resultType == TestResult.ResultType.FAILURE) {
+                val raw = (result.exception?.toString() ?: "").lineSequence().take(4).joinToString(" | ")
+                val msg = raw.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                println("::error title=${desc.className}.${desc.name}::$msg")
+            }
+        }),
+    )
     testLogging {
         events("failed", "skipped")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
