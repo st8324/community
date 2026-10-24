@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router';
 import { ApiError } from '../api/client.js';
+import CommentSection from '../components/CommentSection.jsx';
 import DateTime from '../components/DateTime.jsx';
 import DeleteControl from '../components/DeleteControl.jsx';
 import { toDisplayError } from '../errors.js';
@@ -32,23 +33,26 @@ export default function PostDetailPage() {
   }
 
   return (
-    <article>
-      <h1>{data.title}</h1>
-      <p className="meta">
-        <span>{data.authorName}</span> <DateTime value={data.createdAt} />
-        {data.updatedAt !== null && (
-          <span>
-            {' '}
-            (수정됨 <DateTime value={data.updatedAt} />)
-          </span>
-        )}
-      </p>
-      <p className="post-content">{data.content}</p>
-      <p className="actions">
-        <Link to="/">목록으로</Link>
-        {data.canEdit && <Link to={`/posts/${postId}/edit`}>수정</Link>}
-        {data.canDelete && <DeleteControl postId={postId} />}
-      </p>
-    </article>
+    <>
+      <article>
+        <h1>{data.title}</h1>
+        <p className="meta">
+          <span>{data.authorName}</span> <DateTime value={data.createdAt} />
+          {data.updatedAt !== null && (
+            <span>
+              {' '}
+              (수정됨 <DateTime value={data.updatedAt} />)
+            </span>
+          )}
+        </p>
+        <p className="post-content">{data.content}</p>
+        <p className="actions">
+          <Link to="/">목록으로</Link>
+          {data.canEdit && <Link to={`/posts/${postId}/edit`}>수정</Link>}
+          {data.canDelete && <DeleteControl postId={postId} />}
+        </p>
+      </article>
+      <CommentSection postId={postId} />
+    </>
   );
 }

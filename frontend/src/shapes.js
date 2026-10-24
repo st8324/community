@@ -36,3 +36,19 @@ export function isPost(data) {
     typeof data.canDelete === 'boolean'
   );
 }
+
+function isComment(item) {
+  return (
+    isObject(item) &&
+    Number.isInteger(item.id) &&
+    typeof item.content === 'string' &&
+    typeof item.authorName === 'string' &&
+    typeof item.createdAt === 'string' &&
+    typeof item.canDelete === 'boolean'
+  );
+}
+
+/** 댓글 목록 응답 (01 문서 CMT-02 ④: { items: [{ id, content, authorName, createdAt, canDelete }] }). */
+export function isCommentList(data) {
+  return isObject(data) && Array.isArray(data.items) && data.items.every(isComment);
+}

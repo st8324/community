@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App.jsx';
@@ -274,7 +274,7 @@ describe('댓글 삭제 (CMT-03)', () => {
     fireEvent.click(within(mine).getByRole('button', { name: '삭제' }));
     fireEvent.click(within(mine).getByRole('button', { name: '삭제 확인' }));
 
-    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(1));
     expect(screen.queryByText('내 댓글')).not.toBeInTheDocument();
     expect(api.del).toHaveBeenCalledWith('/api/comments/2');
     expect(commentCalls()).toBe(2);
