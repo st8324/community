@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App.jsx';
@@ -66,6 +66,8 @@ const postPaths = () =>
 beforeEach(() => {
   api.get.mockReset();
   api.post.mockReset();
+  api.put.mockReset();
+  api.del.mockReset();
   onSessionExpired.mockReset();
   onSessionExpired.mockImplementation(() => () => {});
 });
@@ -211,5 +213,86 @@ describe('게시글 상세 화면 (POST-03)', () => {
     renderAt('/posts/13');
     expect(await screen.findByRole('heading', { name: '다른 글' })).toBeInTheDocument();
     expect(postPaths()).toEqual(['/api/posts/12', '/api/posts/13']);
+  });
+});
+
+describe('게시글 삭제 (POST-05)', () => {
+  const owner = () => post({ canEdit: true, canDelete: true });
+
+  it('삭제 버튼을 누르면 바로 지우지 않고 확인을 먼저 묻는다', async () => {
+    serve({ '/api/posts/12': owner() });
+    renderAt('/posts/12');
+
+    fireEvent.click(await screen.findByRole('button', { name: '삭제' }));
+
+    expect(screen.getByText('이 글을 삭제할까요?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '삭제 확인' })).toBeInTheDocument();
+    expect(api.del).not.toHaveBeenCalled();
+  });
+
+  it('취소하면 확인 문구가 사라지고 삭제 요청은 없다', async () => {
+    serve({ '/api/posts/12': owner() });
+    renderAt('/posts/12');
+
+    fireEvent.click(await screen.findByRole('button', { name: '삭제' }));
+    fireEvent.click(screen.getByRole('button', { name: '취소' }));
+
+    expect(screen.queryByText('이 글을 삭제할까요?')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    expect(api.del).not.toHaveBeenCalled();
+  });
+
+  it('삭제 확인을 누르면 DELETE /api/posts/12 후 목록으로 이동한다', async () => {
+    serve({
+      '/api/posts/12': owner(),
+      '/api/posts?page=0': { items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
+    });
+    api.del.mockResolvedValue(null);
+    renderAt('/posts/12');
+
+    fireEvent.click(await screen.findByRole('button', { name: '삭제' }));
+    fireEvent.click(screen.getByRole('button', { name: '삭제 확인' }));
+
+    expect(await screen.findByText('아직 글이 없습니다.')).toBeInTheDocument();
+    expect(api.del).toHaveBeenCalledWith('/api/posts/12');
+  });
+
+  it('서버가 거절하면(403) 서버 message를 보이고 상세 화면에 머문다', async () => {
+    serve({ '/api/posts/12': owner() });
+    api.del.mockRejectedValue(
+      new ApiError({ status: 403, code: 'FORBIDDEN', fields: [], message: '권한이 없습니다.' }),
+    );
+    renderAt('/posts/12');
+
+    fireEvent.click(await screen.findByRole('button', { name: '삭제' }));
+    fireEvent.click(screen.getByRole('button', { name: '삭제 확인' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('권한이 없습니다.');
+    expect(screen.getByRole('heading', { name: '첫 글' })).toBeInTheDocument();
+  });
+
+  it('삭제하는 동안 확인 버튼이 비활성화되어 두 번 보내지 않는다', async () => {
+    serve({
+      '/api/posts/12': owner(),
+      '/api/posts?page=0': { items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
+    });
+    let finish = () => {};
+    api.del.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(null);
+        }),
+    );
+    renderAt('/posts/12');
+
+    fireEvent.click(await screen.findByRole('button', { name: '삭제' }));
+    const confirm = screen.getByRole('button', { name: '삭제 확인' });
+    fireEvent.click(confirm);
+    expect(confirm).toBeDisabled();
+    fireEvent.click(confirm);
+    expect(api.del).toHaveBeenCalledTimes(1);
+
+    finish();
+    await screen.findByText('아직 글이 없습니다.');
   });
 });

@@ -2,8 +2,11 @@ import { Route, Routes } from 'react-router';
 import AuthProvider from './auth/AuthProvider.jsx';
 import { useAuth } from './auth/authContext.js';
 import Layout from './components/Layout.jsx';
+import RequireLogin from './components/RequireLogin.jsx';
+import EditPostPage from './pages/EditPostPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import NewPostPage from './pages/NewPostPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import PostDetailPage from './pages/PostDetailPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
@@ -18,6 +21,22 @@ function AppRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
+        <Route
+          path="posts/new"
+          element={
+            <RequireLogin>
+              <NewPostPage />
+            </RequireLogin>
+          }
+        />
+        <Route
+          path="posts/:id/edit"
+          element={
+            <RequireLogin>
+              <EditPostPage />
+            </RequireLogin>
+          }
+        />
         <Route path="posts/:id" element={<PostDetailPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />

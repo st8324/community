@@ -27,6 +27,7 @@ export default function Layout() {
           </Link>
           {user ? (
             <>
+              <Link to="/posts/new">글쓰기</Link>
               <span className="user">{user.displayName}</span>
               <button type="button" onClick={handleLogout}>
                 로그아웃

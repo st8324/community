@@ -1,15 +1,12 @@
 import { Link, useParams } from 'react-router';
 import { ApiError } from '../api/client.js';
 import DateTime from '../components/DateTime.jsx';
+import DeleteControl from '../components/DeleteControl.jsx';
 import { toDisplayError } from '../errors.js';
 import { useApiGet } from '../hooks/useApiGet.js';
+import { parsePostId } from '../postId.js';
 import { isPost } from '../shapes.js';
 import NotFoundPage from './NotFoundPage.jsx';
-
-/** 양의 정수 문자열만 글 번호로 인정한다 (앞자리 0·부호·소수점 불가). 아니면 요청하지 않는다 (02 문서 5.8절). */
-function parsePostId(raw) {
-  return typeof raw === 'string' && /^[1-9][0-9]{0,18}$/.test(raw) ? raw : null;
-}
 
 /**
  * 게시글 상세 (POST-03). 제목·본문·표시명은 JSX 텍스트로만 넣고, 줄바꿈은 CSS(white-space: pre-wrap)로 보여 준다 (SEC-08).
@@ -50,7 +47,7 @@ export default function PostDetailPage() {
       <p className="actions">
         <Link to="/">목록으로</Link>
         {data.canEdit && <Link to={`/posts/${postId}/edit`}>수정</Link>}
-        {data.canDelete && <button type="button">삭제</button>}
+        {data.canDelete && <DeleteControl postId={postId} />}
       </p>
     </article>
   );
