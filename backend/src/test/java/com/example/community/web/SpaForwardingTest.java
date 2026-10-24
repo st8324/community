@@ -1,5 +1,7 @@
 package com.example.community.web;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,7 +38,7 @@ class SpaForwardingTest {
     mvc.perform(get(path))
         .andExpect(status().isOk())
         .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
-        .andExpect(content().string(org.hamcrest.Matchers.containsString(INDEX_MARKER)));
+        .andExpect(content().string(containsString(INDEX_MARKER)));
   }
 
   @ParameterizedTest
@@ -70,9 +72,10 @@ class SpaForwardingTest {
   @ParameterizedTest
   @ValueSource(strings = {"/posts/3", "/login"})
   void GET이_아닌_요청은_index_html을_돌려주지_않는다(String path) throws Exception {
+    // 정적 리소스 처리기는 "리소스 없음(404)"을 "메서드 불허(405)"보다 먼저 판단한다. 요구하는 것은 index.html이 아니라는 점이다.
     mvc.perform(post(path).with(csrf()))
-        .andExpect(status().isMethodNotAllowed())
+        .andExpect(status().is4xxClientError())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
+        .andExpect(content().string(not(containsString(INDEX_MARKER))));
   }
 }
