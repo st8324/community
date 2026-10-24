@@ -16,8 +16,8 @@ S-10,DATA-05,모든 응답 본문에 password_hash·role·이메일 원문·dele
 S-11,SEC-08,스크립트 문자열을 저장하면 조회 시 변형 없이 JSON 텍스트로 돌려준다,ResponseExposureSecurityTest#scriptStringRoundTripsAsPlainText,PENDING
 S-12,SEC-10,오류 응답에 스택트레이스·예외 클래스명·SQL이 없다,ErrorResponseSecurityTest#errorResponseHasNoInternals,ACTIVE
 S-13,SEC-10,/actuator/health는 상세를 숨기고 다른 actuator 경로는 노출하지 않는다,ErrorResponseSecurityTest#actuatorExposesHealthOnly,PENDING
-S-14,SEC-13,다른 Origin 요청에 CORS 허용 헤더가 붙지 않는다,HeaderSecurityTest#noCorsHeadersForForeignOrigin,PENDING
-S-15,SEC-14,보안 헤더(CSP·X-Content-Type-Options·frame-ancestors)가 있다,HeaderSecurityTest#securityHeadersArePresent,PENDING
+S-14,SEC-13,다른 Origin 요청에 CORS 허용 헤더가 붙지 않는다,HeaderSecurityTest#noCorsHeadersForForeignOrigin,ACTIVE
+S-15,SEC-14,보안 헤더(CSP·X-Content-Type-Options·frame-ancestors)가 있다,HeaderSecurityTest#securityHeadersArePresent,ACTIVE
 S-16,AUTH-02,없는 이메일과 틀린 비밀번호의 오류 응답이 같다,LoginEnumerationSecurityTest#unknownEmailAndWrongPasswordLookTheSame,ACTIVE
 S-17,SEC-16,이미 쓴 리프레시 토큰을 다시 쓰면 401이고 같은 묶음의 토큰이 모두 폐기된다,RefreshTokenSecurityTest#reusedRefreshTokenRevokesWholeFamily,ACTIVE
 S-18,SEC-16,리프레시 쿠키는 HttpOnly·Secure·SameSite=Strict·Path=/api/auth·Max-Age=1209600,RefreshTokenSecurityTest#refreshCookieAttributes,ACTIVE
