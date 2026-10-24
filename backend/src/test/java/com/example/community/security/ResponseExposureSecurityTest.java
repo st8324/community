@@ -26,8 +26,8 @@ import org.springframework.test.web.servlet.MvcResult;
 /**
  * S-10 (DATA-05), S-11 (SEC-08).
  *
- * <p><b>아직 PENDING</b> (03 문서 HD-21, HD-28): 두 항목은 "모든 응답"이 대상이라 댓글 응답이 생긴 뒤에 ACTIVE로 바꾼다. 게시글 PR은
- * 게시글 응답을 먼저 검사하고, 댓글 PR이 같은 메서드에 댓글 응답을 추가한다. PENDING이어도 테스트 자체는 매 빌드 실행된다.
+ * <p>두 항목은 "모든 응답"이 대상이다. 게시글 PR이 게시글 응답을 먼저 검사했고, 댓글 PR이 같은 메서드에 댓글 응답(작성·목록)을 더해 ACTIVE가 되었다 (03
+ * 문서 HD-21, HD-28).
  */
 @IntegrationTest
 class ResponseExposureSecurityTest {
@@ -88,7 +88,22 @@ class ResponseExposureSecurityTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(JsonBodies.of("title", "t2", "content", "c2")))
                 .andReturn()));
-    // (댓글 PR에서 여기에 댓글 응답을 추가한다)
+    // 댓글 작성 (작성자 본인 응답)
+    bodies.add(
+        body(
+            mvc.perform(
+                    post("/api/posts/{id}/comments", postId)
+                        .with(csrf())
+                        .cookie(authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JsonBodies.of("content", "c")))
+                .andReturn()));
+    // 댓글 목록 — 비회원·작성자·관리자 시점 (방금 쓴 댓글이 들어 있다)
+    bodies.add(body(mvc.perform(get("/api/posts/{id}/comments", postId)).andReturn()));
+    bodies.add(
+        body(mvc.perform(get("/api/posts/{id}/comments", postId).cookie(authorToken)).andReturn()));
+    bodies.add(
+        body(mvc.perform(get("/api/posts/{id}/comments", postId).cookie(adminToken)).andReturn()));
 
     for (String body : bodies) {
       assertThat(body).as("응답이 비어 있으면 검사가 무의미하다").isNotBlank();
@@ -129,7 +144,23 @@ class ResponseExposureSecurityTest {
     String json = body(read);
     assertThat((String) JsonPath.read(json, "$.title")).isEqualTo(title);
     assertThat((String) JsonPath.read(json, "$.content")).isEqualTo(content);
-    // (댓글 PR에서 댓글 본문도 같은 방식으로 추가한다)
+
+    // 댓글 본문도 같은 방식으로 저장·조회한다
+    MvcResult comment =
+        mvc.perform(
+                post("/api/posts/{id}/comments", id.longValue())
+                    .with(csrf())
+                    .cookie(token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(JsonBodies.of("content", content)))
+            .andReturn();
+    assertThat(comment.getResponse().getStatus()).isEqualTo(201);
+    assertThat((String) JsonPath.read(body(comment), "$.content")).isEqualTo(content);
+
+    MvcResult comments = mvc.perform(get("/api/posts/{id}/comments", id.longValue())).andReturn();
+    assertThat(comments.getResponse().getContentType())
+        .startsWith(MediaType.APPLICATION_JSON_VALUE);
+    assertThat((String) JsonPath.read(body(comments), "$.items[0].content")).isEqualTo(content);
   }
 
   private static String body(MvcResult result) throws Exception {

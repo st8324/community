@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.example.community.auth.Role;
 import com.example.community.support.AuthFixtures;
 import com.example.community.support.AuthFixtures.Account;
+import com.example.community.support.CommentFixtures;
 import com.example.community.support.IntegrationTest;
 import com.example.community.support.JsonBodies;
 import com.example.community.support.PostFixtures;
@@ -46,6 +47,7 @@ class PermissionMatrixTest {
   @Autowired MockMvc mvc;
   @Autowired AuthFixtures fixtures;
   @Autowired PostFixtures posts;
+  @Autowired CommentFixtures comments;
 
   /** 행의 actor로 로그인한 상태. GUEST는 계정·쿠키 없음. */
   record Actor(Account account, Cookie[] cookies) {}
@@ -83,8 +85,9 @@ class PermissionMatrixTest {
     assertThat(result.getResponse().getStatus())
         .as("%s 응답: %s", row.get("case_id"), body)
         .isEqualTo(Integer.parseInt(row.get("expected")));
-    assertFlag(body, "canEdit", row.get("can_edit"), row.get("case_id"));
-    assertFlag(body, "canDelete", row.get("can_delete"), row.get("case_id"));
+    String root = flagRoot(row);
+    assertFlag(body, root + "canEdit", row.get("can_edit"), row.get("case_id"));
+    assertFlag(body, root + "canDelete", row.get("can_delete"), row.get("case_id"));
   }
 
   /** 엔드포인트별 실행기. 새 기능 PR은 여기에 case를 추가하고 해당 CSV 행을 ACTIVE로 바꾼다. */
@@ -118,6 +121,18 @@ class PermissionMatrixTest {
               .contentType(MediaType.APPLICATION_JSON)
               .content(JsonBodies.of("title", "수정 제목", "content", "수정 본문"));
       case "DELETE /api/posts/{id}" -> delete("/api/posts/{id}", targetPost(row, actor));
+      // ── 댓글 (01 v0.6) ──
+      case "GET /api/posts/{id}/comments" -> {
+        long postId = newPostId();
+        comments.create(postId, commentAuthorId(row, actor));
+        yield get("/api/posts/{id}/comments", postId);
+      }
+      case "POST /api/posts/{id}/comments" ->
+          post("/api/posts/{id}/comments", newPostId())
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(JsonBodies.of("content", "매트릭스 댓글"));
+      case "DELETE /api/comments/{id}" ->
+          delete("/api/comments/{id}", comments.create(newPostId(), commentAuthorId(row, actor)));
       default -> {
         fail("%s: '%s'의 실행기가 없다. ACTIVE로 바꾸기 전에 실행기를 추가한다.", row.get("case_id"), endpoint);
         yield null;
@@ -157,6 +172,32 @@ class PermissionMatrixTest {
       default ->
           throw new IllegalStateException(row.get("case_id") + ": 글 대상이 필요한 행인데 target=NONE");
     };
+  }
+
+  private long newPostId() {
+    return posts.create(fixtures.createUser(Role.USER).id());
+  }
+
+  /** 행의 target에 맞는 댓글 작성자. OWN = actor, OTHER = 새 일반 회원 (글 작성자와는 별개의 사람). */
+  private long commentAuthorId(Map<String, String> row, Actor actor) {
+    return switch (row.get("target")) {
+      case "OWN" -> {
+        if (actor.account() == null) {
+          throw new IllegalStateException(row.get("case_id") + ": GUEST에는 OWN 대상이 없다");
+        }
+        yield actor.account().id();
+      }
+      case "OTHER" -> fixtures.createUser(Role.USER).id();
+      default ->
+          throw new IllegalStateException(row.get("case_id") + ": 댓글 대상이 필요한 행인데 target=NONE");
+    };
+  }
+
+  /** 댓글 목록 응답은 불리언이 항목 안에 있다 ({@code items[0]}). 그 밖의 응답은 최상위. */
+  private static String flagRoot(Map<String, String> row) {
+    boolean commentList =
+        row.get("method").equals("GET") && row.get("path").equals("/api/posts/{id}/comments");
+    return commentList ? "items[0]." : "";
   }
 
   private static void assertFlag(String body, String field, String expected, String caseId) {

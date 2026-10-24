@@ -17,13 +17,13 @@ import org.springframework.test.context.ContextConfiguration;
  * 테스트는 이 어노테이션을 붙인다. 설정이 한 곳에 모여 있어야 Spring 컨텍스트가 재사용되어 테스트가 빨라진다.
  *
  * <p>JWT 서명 키는 {@link RandomJwtSecretInitializer}가 실행 시 무작위로 만든다. {@link AuthFixtures}는 사용자 생성·로그인
- * 도우미, {@link PostFixtures}는 게시글 데이터 도우미다 (03 문서 HD-19, HD-27).
+ * 도우미, {@link PostFixtures}·{@link CommentFixtures}는 게시글·댓글 데이터 도우미다 (03 문서 HD-19, HD-27).
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestcontainersConfig.class, AuthFixtures.class, PostFixtures.class})
+@Import({TestcontainersConfig.class, AuthFixtures.class, PostFixtures.class, CommentFixtures.class})
 @ContextConfiguration(initializers = RandomJwtSecretInitializer.class)
 public @interface IntegrationTest {}
