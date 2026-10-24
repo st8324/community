@@ -1,8 +1,13 @@
 package com.example.community.common.error;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -27,6 +32,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+  /** 프론트 빌드 결과 (Docker 빌드가 JAR의 static/에 넣는다). 없으면 SPA 포워딩 없이 404 JSON. */
+  private static final Resource INDEX_HTML = new ClassPathResource("static/index.html");
 
   @ExceptionHandler(ApiException.class)
   ResponseEntity<ErrorResponse> handleApi(ApiException e) {
@@ -63,9 +71,33 @@ public class GlobalExceptionHandler {
     return respond(ErrorCode.METHOD_NOT_ALLOWED);
   }
 
+  /**
+   * 정적 파일이 없을 때의 처리. 브라우저 주소 방식 SPA라 {@code /posts/3}을 새로고침하면 서버가 그 경로를 받는다 (02 문서 T-18, 03 문서
+   * HD-30). 실제 정적 파일(js·css 등)이 있으면 Spring이 그대로 돌려주므로 여기에 오지 않는다.
+   *
+   * <p>index.html로 넘기는 것은 <b>점(.)이 없는 GET 경로</b>뿐이다. {@code /api/**}와 {@code /actuator/**}는 JSON
+   * 404를 유지하고, 파일 요청({@code /missing.js})은 404로 남긴다 (없는 파일을 HTML로 응답하지 않는다).
+   */
   @ExceptionHandler(NoResourceFoundException.class)
-  ResponseEntity<ErrorResponse> handleNotFound(NoResourceFoundException e) {
+  ResponseEntity<?> handleNotFound(NoResourceFoundException e) {
+    if (isSpaRoute(e.getHttpMethod(), e.getResourcePath()) && INDEX_HTML.exists()) {
+      return ResponseEntity.ok()
+          .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+          .body(INDEX_HTML);
+    }
     return respond(ErrorCode.NOT_FOUND);
+  }
+
+  private static boolean isSpaRoute(HttpMethod method, String resourcePath) {
+    boolean readOnly = HttpMethod.GET.equals(method) || HttpMethod.HEAD.equals(method);
+    return readOnly
+        && !resourcePath.contains(".")
+        && !isUnder(resourcePath, "api")
+        && !isUnder(resourcePath, "actuator");
+  }
+
+  private static boolean isUnder(String resourcePath, String firstSegment) {
+    return resourcePath.equals(firstSegment) || resourcePath.startsWith(firstSegment + "/");
   }
 
   // 컨트롤러 안에서 던져진 보안 예외가 아래 Exception 처리기에 잡혀 500이 되지 않도록 한다.

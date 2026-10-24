@@ -24,6 +24,14 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @EnableWebSecurity
 public class SecurityConfig {
 
+  /**
+   * CSP (SEC-14, 02 문서 5.8절·T-20). React 이스케이프(SEC-08)가 뚫려도 인라인·외부 스크립트 실행을 막는 2차 방어선이다. Vite 빌드
+   * 결과는 외부 파일 스크립트뿐이라 인라인 허용이 필요 없다. 값을 바꾸려면 문서를 먼저 고친다.
+   */
+  static final String CONTENT_SECURITY_POLICY =
+      "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action"
+          + " 'self'";
+
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityErrorResponses errors)
       throws Exception {
@@ -39,6 +47,11 @@ public class SecurityConfig {
         .formLogin(AbstractHttpConfigurer::disable)
         .logout(AbstractHttpConfigurer::disable) // 로그아웃은 AuthController가 쿠키를 지운다 (AUTH-03)
         .requestCache(AbstractHttpConfigurer::disable)
+        // 기본 보안 헤더(nosniff, X-Frame-Options, Cache-Control, HTTPS에서 HSTS)는 Spring Security 기본값을 쓰고
+        // CSP만 더한다.
+        .headers(
+            headers ->
+                headers.contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY)))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(HttpMethod.GET, "/api/csrf")
