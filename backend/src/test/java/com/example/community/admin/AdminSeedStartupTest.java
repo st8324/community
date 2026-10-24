@@ -45,7 +45,8 @@ class AdminSeedStartupTest {
     User admin = users.findByEmail(EMAIL).orElseThrow();
 
     assertThat(admin.getRole()).isEqualTo(Role.ADMIN);
-    assertThat(admin.getPasswordHash()).startsWith("$2").isNotEqualTo(PASSWORD);
+    // 가입 계정과 같은 해시기(DelegatingPasswordEncoder)라 "{bcrypt}" 접두사가 붙는다 (S-08과 같은 형식).
+    assertThat(admin.getPasswordHash()).startsWith("{bcrypt}$2").isNotEqualTo(PASSWORD);
   }
 
   @Test
