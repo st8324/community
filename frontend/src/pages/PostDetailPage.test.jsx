@@ -41,6 +41,10 @@ function serve(routes) {
     if (path === '/api/auth/me') {
       throw unauthorized();
     }
+    // 댓글은 글과 따로 불러온다 (02 5.8절). 따로 정하지 않은 글의 댓글은 "없음"으로 답한다.
+    if (/^\/api\/posts\/\d+\/comments$/.test(path) && !(path in routes)) {
+      return { items: [] };
+    }
     if (path in routes) {
       const answer = routes[path];
       if (answer instanceof Error) {
@@ -60,8 +64,11 @@ function renderAt(path) {
   );
 }
 
+// 글 요청만 모은다 (댓글 요청은 CommentSection.test.jsx가 따로 확인한다).
 const postPaths = () =>
-  api.get.mock.calls.map(([path]) => path).filter((p) => p.startsWith('/api/posts'));
+  api.get.mock.calls
+    .map(([path]) => path)
+    .filter((p) => p.startsWith('/api/posts') && !p.endsWith('/comments'));
 
 beforeEach(() => {
   api.get.mockReset();
