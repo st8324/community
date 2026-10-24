@@ -113,7 +113,12 @@ describe('로그아웃 (AUTH-03)', () => {
   });
 
   it('로그아웃 요청이 실패하면 로그인 상태를 유지하고 서버 message를 보인다', async () => {
-    api.get.mockResolvedValue(ME);
+    // 목록 화면(F-3)이 /api/posts도 요청하므로 경로별로 답한다 (오류 알림이 이 테스트의 알림 하나뿐이도록).
+    api.get.mockImplementation(async (path) =>
+      path === '/api/auth/me'
+        ? ME
+        : { items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
+    );
     api.post.mockRejectedValue(
       new ApiError({
         status: 500,

@@ -5,6 +5,7 @@ import Layout from './components/Layout.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+import PostDetailPage from './pages/PostDetailPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 
 // 로그인 상태를 알기 전에는 화면을 그리지 않는다 (비회원 화면이 잠깐 보였다 바뀌는 것을 막는다).
@@ -17,6 +18,7 @@ function AppRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
+        <Route path="posts/:id" element={<PostDetailPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="*" element={<NotFoundPage />} />
